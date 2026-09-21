@@ -13,16 +13,29 @@
 
 #show: simple-theme.with(
   aspect-ratio: "16-9",
-  header: [James' Super Cool IS 201 Cheat Sheet],
+  header: none,
+  footer-right: context {
+    // hide the slide number on a topic's primary (title) page, so corner
+    // content (like an acronym or note) can sit in the true corner —
+    // matching the original slides, which don't number those pages either.
+    let pg = here().page()
+    let starts-here = query(heading).any(h => h.location().page() == pg)
+    if not starts-here {
+      utils.slide-counter.display() + " / " + utils.last-slide-number
+    }
+  },
   subslide-preamble: block(
     width: 100%,
-    below: 1em,
-    align(center)[#text(1.15em, weight: "bold")[#underline(utils.display-current-heading(level: 2))]],
+    below: 0.6em,
+    align(center)[#text(1em, weight: "bold")[#underline(utils.display-current-heading(level: 2))]],
   ),
+  config-page(margin: (top: 1em, rest: 2em)),
 )
 
 // ---------- global sizing (matches the original slides' larger, readable type) ----------
+#set text(font: "Arial")
 #show raw: set text(size: 0.8em)
+#show link: it => underline(text(fill: rgb("#3d6b78"))[#it])
 
 // ---------- helpers ----------
 
@@ -43,6 +56,34 @@
 
 #let hl(body, color: yellow) = box(fill: color.lighten(40%), inset: 2pt, outset: 2pt, radius: 2pt)[#body]
 
+// ---------- ERD building blocks (real entity boxes + crow's-foot connectors) ----------
+#let erd-pk-fill = rgb("#f7d6da")
+#let erd-fk-fill = rgb("#cfe0f5")
+
+// header row of an ERD entity box (with a small "collapse" icon, like dbdiagram.io)
+#let erow-header(coord, title, width: 6cm) = node(
+  coord,
+  align(left + horizon)[
+    #box(width: 7pt, height: 7pt, stroke: 0.5pt + gray)[#align(center + horizon)[#text(size: 6pt)[#sym.minus]]]
+    #h(4pt) #text(weight: "bold", size: 11pt)[#title]
+  ],
+  shape: rect, stroke: 0.5pt + gray, fill: luma(230),
+  width: width, height: 0.85cm, outset: 0pt,
+)
+
+// one attribute row of an ERD entity box
+#let erow(coord, key, label, width: 6cm, fill: white, name: none) = node(
+  coord,
+  align(left + horizon)[
+    #grid(columns: (1.5cm, 1fr), align: left + horizon,
+      text(weight: "bold", size: 11pt)[#key],
+      text(size: 11pt)[#label],
+    )
+  ],
+  shape: rect, stroke: 0.5pt + gray, fill: fill,
+  width: width, height: 0.72cm, outset: 0pt, name: name,
+)
+
 // ---------- slides ----------
 
 #focus-slide(background: black)[
@@ -59,11 +100,11 @@
       #box(fill: white, inset: 3pt)[#text(size: 1.4em, weight: "bold")[James' Super Cool \ IS 201 Cheat Sheet]]
     ]
 
-    #place(bottom + right, dx: 40pt, dy: 40pt)[#square(stroke:white, fill:white, width: 7cm)]
+    #place(bottom + right, dx: 50pt, dy: 50pt)[#square(stroke:white, fill:white, width: 6cm)]
 
 
-    #place(bottom + right, dx: 60pt, dy: 60pt)[
-      #qrcode("https://bit.ly/4tZYPBK", width: 8cm, quiet-zone: true)
+    #place(bottom + right, dx: 50pt, dy: 50pt)[
+      #qrcode("https://jimna-h.github.io/IS_201_CHEATSHEET/is201-cheatsheet.pdf", width: 6cm, quiet-zone: true)
     ]
   ]
 ]
@@ -75,53 +116,76 @@
   stroke: 0.5pt + gray,
   inset: 8pt,
   [Slide], [Topic],
-  [1], [ERDs],
-  [7], [SQL],
-  [9], [Flow Charts],
-  [10], [VBA],
-  [16], [Statistics],
-  [17], [Tableau],
-  [18], [Solver],
-  [19], [HTML],
-  [28], [CSS],
+  [2], [#link(<erd-pfk>)[ERDs]],
+  [6], [#link(<sql>)[SQL]],
+  [8], [#link(<flowcharts>)[Flow Charts]],
+  [9], [#link(<vba>)[VBA]],
+  [15], [#link(<statistics>)[Statistics]],
+  [16], [#link(<tableau>)[Tableau]],
+  [17], [#link(<solver>)[Solver]],
+  [18], [#link(<html>)[HTML]],
+  [27], [#link(<css>)[CSS]],
 )
 
-== ERD: Primary / Foreign Keys
+== ERD: Primary / Foreign Keys <erd-pfk>
 
-#set text(size: 0.68em)
-#grid(columns: (0.85fr, 0.95fr, 1.1fr), gutter: 0.8em,
-entity("company", (
-  ("PK", underline[company_id]),
-  ("", [company_name]), ("", [employees]), ("", [followers]),
-  ("", [industry]), ("", [state]), ("", [country]),
-  ("", [city]), ("", [zip]),
-)),
-entity("posting", (
-  ("PK", underline[job_id]),
-  ("", [title]), ("", [description]), ("", [pay_period]),
-  ("", [work_type]), ("", [job_location]), ("", [applies]),
-  ("", [remote]), ("", [views]), ("", [level]),
-  ("", [sponsored]), ("", [compensation]), ("", [job_domain]),
-  ("FK", hl[company_id]), ("FK", [ben_pack_id]),
-)),
+#grid(columns: (auto, 11.5cm), gutter: 1.2em,
 [
-  #text(size: 1.15em)[
-    A #hl(color: rgb("#f4c2c2"))[primary key] is a unique identifier (think social security number)
+  #diagram(
+    node-stroke: 0.5pt + gray,
+    spacing: (1.6cm, 0pt),
+    erow-header((0, 0), "company", width: 4.6cm),
+    erow((0, 1), "PK", underline[company_id], width: 4.6cm, fill: erd-pk-fill, name: <company-pk>),
+    erow((0, 2), "", "company_name", width: 4.6cm),
+    erow((0, 3), "", "employees", width: 4.6cm),
+    erow((0, 4), "", "followers", width: 4.6cm),
+    erow((0, 5), "", "industry", width: 4.6cm),
+    erow((0, 6), "", "state", width: 4.6cm),
+    erow((0, 7), "", "country", width: 4.6cm),
+    erow((0, 8), "", "city", width: 4.6cm),
+    erow((0, 9), "", "zip", width: 4.6cm),
+
+    erow-header((1, 0), "posting", width: 5.4cm),
+    erow((1, 1), "PK", underline[job_id], width: 5.4cm, fill: erd-pk-fill),
+    erow((1, 2), "", "title", width: 5.4cm),
+    erow((1, 3), "", "description", width: 5.4cm),
+    erow((1, 4), "", "pay_period", width: 5.4cm),
+    erow((1, 5), "", "work_type", width: 5.4cm),
+    erow((1, 6), "", "job_location", width: 5.4cm),
+    erow((1, 7), "", "applies", width: 5.4cm),
+    erow((1, 8), "", "remote", width: 5.4cm),
+    erow((1, 9), "", "views", width: 5.4cm),
+    erow((1, 10), "", "level", width: 5.4cm),
+    erow((1, 11), "", "sponsored", width: 5.4cm),
+    erow((1, 12), "", "compensation", width: 5.4cm),
+    erow((1, 13), "", "job_domain", width: 5.4cm),
+    erow((1, 14), "FK", "company_id", width: 5.4cm, fill: erd-fk-fill, name: <posting-fk>),
+    erow((1, 15), "FK", "ben_pack_id", width: 5.4cm),
+
+    edge(<company-pk>, (0.5, 1), (0.5, 14), <posting-fk>, "1-n", stroke: 0.6pt + black, layer: 1),
+  )
+],
+[
+  #text(size: 1.1em)[
+    A #box(fill: erd-pk-fill, inset: 2pt, outset: 2pt, radius: 2pt)[primary key] is a unique identifier (think social security number)
 
     #v(0.6em)
-    A #hl(color: rgb("#c2d6f4"))[foreign key] is another table's primary key, used to link two tables together
+    A #box(fill: erd-fk-fill, inset: 2pt, outset: 2pt, radius: 2pt)[foreign key] is another table's primary key, used to link two tables together
   ]
-
-  #v(1em)
-  #align(right)[#text(size: 1.1em)[#strong[E]ntity \ #strong[R]elationship \ #strong[D]iagram]]
 ]
 )
 
+#place(bottom + right, dx: 0em, dy: 0em)[
+  #text(size: 1.1em)[#strong[E]ntity \ #strong[R]elationship \ #strong[D]iagram]
+]
+
 == ERD: Cardinality
 
+#set text(size: 0.92em)
+#set par(spacing: 0.55em)
 Read #underline[left-to-right] AND #underline[right-to-left]
 
-#v(0.4em)
+#v(0.2em)
 *One to One (1:1)* \
 #hl(color: rgb("#c2d6f4"))[A store has one manager] #sym.space
 #hl(color: rgb("#f4d9a0"))[A manager works at one store]
@@ -134,7 +198,7 @@ Read #underline[left-to-right] AND #underline[right-to-left]
 #hl(color: rgb("#c2d6f4"))[A student can enroll in many courses] #sym.space
 #hl(color: rgb("#f4d9a0"))[A course can have lots of students]
 
-#v(0.4em)
+#v(0.2em)
 #text(style: "italic", size: 0.85em)[Note! M:N cardinality requires a composite table (next slide)]
 
 == ERD: Composite Table
@@ -191,7 +255,7 @@ and the #hl(color: rgb("#b7e4b7"))[outer] ones are *maximum* (1 or many)
   Think: a student could have 0 cars, but they could also have multiple.
 ]
 
-== SQL
+== SQL <sql>
 
 #align(right)[#text(size: 0.85em)[#strong[S]tructured #strong[Q]uery #strong[L]anguage]]
 
@@ -235,13 +299,13 @@ ta_name *LIKE* '%ame%' #h(1fr) → The text ("ame") is contained within the attr
 ta_name *IN* ("James", "Robert", "Frankie") \
 #h(1fr) → Exact match for #underline[any] of these
 
-== Flow Charts
+== Flow Charts <flowcharts>
 
-#set text(size: 0.65em)
+#set text(size: 0.58em)
 #grid(columns: (1fr, 1.5fr), gutter: 1.2em,
 [
   #text(size: 0.9em)[go to \ draw.io]
-  #scale(x: 75%, y: 75%, reflow: true)[
+  #scale(x: 68%, y: 68%, reflow: true)[
     #diagram(
       node-stroke: 0.7pt,
       spacing: (0.8cm, 0.9cm),
@@ -260,9 +324,9 @@ ta_name *IN* ("James", "Robert", "Frankie") \
   #text(size: 0.9em)[file \> export as \> pdf]
 ],
 [
-  #text(size: 1.15em, weight: "bold")[EXAMPLE: \ How to solve 1+1]
-  #v(0.2em)
-  #scale(x: 75%, y: 75%, reflow: true)[
+  #text(size: 1.05em, weight: "bold")[EXAMPLE: How to solve 1+1]
+  #v(0.15em)
+  #scale(x: 68%, y: 68%, reflow: true)[
     #diagram(
       node-stroke: 0.7pt,
       edge-stroke: 0.7pt,
@@ -288,7 +352,7 @@ ta_name *IN* ("James", "Robert", "Frankie") \
 ]
 )
 
-== VBA: Basics
+== VBA: Basics <vba>
 
 #align(right)[#text(size: 0.85em)[#strong[V]isual #strong[B]asic for #strong[A]pplications]]
 
@@ -479,7 +543,7 @@ Function thisIsMyFunctionName(num As Integer, tf As Boolean) As String
 End Function
 ```
 
-== Statistics
+== Statistics <statistics>
 
 #grid(columns: (1fr, 1fr), gutter: 1.5em,
 [
@@ -516,13 +580,13 @@ End Function
 ]
 )
 
-== Tableau
+== Tableau <tableau>
 
 - "Default" settings are usually a good starting point — check them first
 - Switching the x- and y-axis can reveal a clearer story
 - Watch your sort/ordering — Tableau doesn't always order the way you expect
 
-== Solver
+== Solver <solver>
 
 *Two important Excel formulas:*
 
@@ -535,7 +599,7 @@ End Function
 - *Constraints:* set a changing-cell reference, an operator (`<=`, `=`, `>=`), and the constraint value
 - *If integer constraints aren't working:* Solver → Options → uncheck "Ignore Integer Constraints" and set Integer Optimality to 1%
 
-== HTML: Setup
+== HTML: Setup <html>
 
 #align(right)[#text(size: 0.85em)[#strong[H]yper#strong[T]ext #strong[M]arkup #strong[L]anguage]]
 
@@ -681,7 +745,7 @@ To quickly format everything correctly (tabs, long lines, etc.) in VS Code: \
 #v(0.5em)
 #text(fill: red, size: 0.9em)[After a couple of minutes, refresh the page — there will be a link to your website at the top.]
 
-== CSS: Basics
+== CSS: Basics <css>
 
 #align(right)[#text(size: 0.85em)[#strong[C]ascading #strong[S]tyle #strong[S]heets]]
 
@@ -725,7 +789,7 @@ body {
 #text(style: "italic", size: 0.85em)[There are A LOT of selectors and properties — Google and AI are your friend for finding exactly what you want!]
 
 #focus-slide(background: black)[
-  #text(size: 0.7em)[bit.ly/4tZYPBK]
+  #text(size: 0.55em)[jimna-h.github.io/IS_201_CHEATSHEET]
   #v(0.5em)
-  #box(fill: white, inset: 8pt)[#qrcode("https://bit.ly/4tZYPBK", width: 6cm, quiet-zone: true)]
+  #box(fill: white, inset: 8pt)[#qrcode("https://jimna-h.github.io/IS_201_CHEATSHEET/is201-cheatsheet.pdf", width: 6cm, quiet-zone: true)]
 ]
