@@ -542,51 +542,53 @@ and the #hl(color: rgb("#b7e4b7"))[outer] ones are *maximum* (1 or many)
 == Flow Charts <flowcharts>
 
 #set text(size: 0.52em)
-#grid(columns: (1fr, 1.5fr), gutter: 1.2em,
+#place(top + left, text(size: 0.85em)[go to \ draw.io])
+#place(bottom + left, text(size: 0.85em)[file \> export as \> pdf])
+#grid(columns: (1fr, 1fr), column-gutter: 1.2em, inset: (left: 0.7em, right: 0.7em),
+  align: (center, center),
+  stroke: (x, y) => if x == 1 { (left: 0.7pt + black) } else { none },
 [
-  #text(size: 0.9em)[go to \ draw.io]
-  #scale(x: 62%, y: 62%, reflow: true)[
+  #scale(x: 82%, y: 82%, reflow: true)[
     #diagram(
       node-stroke: 0.7pt,
-      spacing: (0.8cm, 0.9cm),
-      node((0,0), [start/end], shape: fletcher.shapes.circle, width: 2.4cm),
-      node((0,1), [process \ (something happens)], shape: rect, width: 2.4cm),
-      node((0,2), [decision \ (T/F or Y/N)], shape: fletcher.shapes.diamond, width: 2.6cm, height: 1.7cm),
-      node((0,3), [input/output \ (info entered or displayed)], shape: fletcher.shapes.parallelogram, width: 2.6cm),
-      node((0,4), [connector], shape: fletcher.shapes.circle, width: 1.2cm),
+      spacing: (0.7cm, 1.3cm),
+      node((0,0), [start/end], shape: fletcher.shapes.ellipse, width: 2.8cm, height: 1.9cm),
+      node((1,0), align(left)[you can only have ONE start \ #v(0.3em) but you CAN have multiple ends], shape: rect, stroke: none, width: 5.2cm),
+      node((0,1), [process \ (something happens)], shape: rect, width: 3.4cm, height: 1.9cm),
+      node((0,2), [decision \ (T/F or Y/N)], shape: fletcher.shapes.diamond, width: 2.9cm, height: 2.8cm),
+      node((1,2), align(left)[decisions are the ONLY thing that can have more than one arrow pointing OUT of them], shape: rect, stroke: none, width: 5.2cm),
+      node((0,3), [input/output \ (info entered or displayed)], shape: fletcher.shapes.parallelogram, width: 4.2cm, height: 1.8cm),
+      node((0,4), [connector], shape: fletcher.shapes.circle, width: 2cm),
+      node((1,4), align(left)[connectors are the ONLY thing that can have more than one arrow pointing INTO them], shape: rect, stroke: none, width: 5.2cm),
     )
   ]
-  #text(size: 0.9em)[you can only have ONE start, but you CAN have multiple ends. \
-  decisions are the ONLY shape with >1 arrow OUT. \
-  connectors are the ONLY shape with >1 arrow IN.]
-
-  #v(0.4em)
-  #text(size: 0.9em)[file \> export as \> pdf]
 ],
 [
   #text(size: 1.05em, weight: "bold")[EXAMPLE: How to solve 1+1]
-  #v(0.15em)
-  #scale(x: 62%, y: 62%, reflow: true)[
+  #v(0.4em)
+  #scale(x: 80%, y: 80%, reflow: true)[
     #diagram(
       node-stroke: 0.7pt,
       edge-stroke: 0.7pt,
-      spacing: (1.3cm, 1cm),
-      node((1,0), [start], shape: fletcher.shapes.circle, width: 1.6cm),
+      spacing: (1.9cm, 1.3cm),
+      node((1,0), [start], shape: fletcher.shapes.ellipse, width: 1.8cm, height: 1.2cm),
       edge((1,0), (1,1), "-|>"),
-      node((1,1), [do you have a \ calculator?], shape: fletcher.shapes.diamond, width: 3.1cm, height: 1.9cm),
+      node((1,1), [do you have a \ calculator?], shape: fletcher.shapes.diamond, width: 3cm, height: 2.4cm),
       edge((1,1), (0,1), "-|>", [no], label-side: center),
-      node((0,1), [do 1+1 in \ your head], shape: rect, width: 2.2cm),
+      node((0,1), [do 1+1 in \ your head], shape: rect, width: 2.2cm, height: 1.3cm),
       edge((1,1), (2,1), "-|>", [yes], label-side: center),
-      node((2,1), [enter "1+1=" \ into calculator], shape: fletcher.shapes.parallelogram, width: 2.9cm),
+      node((2,1), [enter "1+1=" \ into calculator], shape: fletcher.shapes.parallelogram, width: 3.4cm, height: 1.4cm),
       edge((2,1), (2,2), "-|>"),
-      node((2,2), [calculator processes \ the math], shape: rect, width: 2.9cm),
+      node((2,2), [calculator processes \ the math], shape: rect, width: 2.9cm, height: 1.4cm),
       edge((2,2), (2,3), "-|>"),
-      node((2,3), [calculator displays \ the result], shape: rect, width: 2.9cm),
-      edge((0,1), (1,4), "-|>"),
-      edge((2,3), (1,4), "-|>"),
+      node((2,3), [calculator displays \ the result], shape: fletcher.shapes.parallelogram, width: 3.4cm, height: 1.4cm),
+      edge((0,1), (0,4), "-"),
+      edge((0,4), (1,4), "-|>"),
+      edge((2,3), (2,4), "-"),
+      edge((2,4), (1,4), "-|>"),
       node((1,4), [], shape: fletcher.shapes.circle, width: 0.6cm),
       edge((1,4), (1,5), "-|>"),
-      node((1,5), [end], shape: fletcher.shapes.circle, width: 1.6cm),
+      node((1,5), [end], shape: fletcher.shapes.ellipse, width: 1.8cm, height: 1.2cm),
     )
   ]
 ]
