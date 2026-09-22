@@ -217,10 +217,6 @@
 
 // ---------- slides ----------
 
-#focus-slide(background: black)[
-  #text(size: 1.3em)[IS 201 TA Lab]
-]
-
 #title-slide[
   #box(width: 100%)[
     #image("Patsy-Coconuts.jpg", width: 100%)
@@ -235,7 +231,7 @@
 
 
     #place(bottom + right, dx: 50pt, dy: 50pt)[
-      #qrcode("https://jimna-h.github.io/IS_201_CHEATSHEET/is201-cheatsheet.pdf", width: 6cm, quiet-zone: true)
+      #qrcode("https://jimna-h.github.io/james_super_cool_is_201_cheatsheet/is201-cheatsheet.pdf", width: 6cm, quiet-zone: true)
     ]
   ]
 ]
@@ -1031,7 +1027,11 @@ body {
 #text(style: "italic", size: 0.85em)[There are A LOT of selectors and properties — Google and AI are your friend for finding exactly what you want!]
 
 #focus-slide(background: black)[
-  #text(size: 0.55em)[jimna-h.github.io/IS_201_CHEATSHEET]
+  #text(size: 0.55em)[jimna-h.github.io/james_super_cool_is_201_cheatsheet]
   #v(0.5em)
-  #box(fill: white, inset: 8pt)[#qrcode("https://jimna-h.github.io/IS_201_CHEATSHEET/is201-cheatsheet.pdf", width: 6cm, quiet-zone: true)]
+  #box(fill: white, inset: 8pt)[#qrcode("https://jimna-h.github.io/james_super_cool_is_201_cheatsheet/is201-cheatsheet.pdf", width: 6cm, quiet-zone: true)]
+]
+
+#focus-slide(background: black)[
+  #text(size: 49pt)[IS 201 TA Lab]
 ]
