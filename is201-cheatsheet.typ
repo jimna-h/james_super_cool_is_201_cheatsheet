@@ -10,7 +10,7 @@
 #import "@preview/zebra:0.1.0": qrcode
 
 #show: codly-init.with()
-#codly(languages: codly-languages, zebra-fill: none, stroke: 0.5pt + gray)
+#codly(languages: codly-languages, zebra-fill: none, stroke: none)
 
 #show: simple-theme.with(
   aspect-ratio: "16-9",
@@ -66,6 +66,22 @@
 )
 
 #let hl(body, color: yellow) = box(fill: color.lighten(40%), inset: 2pt, outset: 2pt, radius: 2pt)[#body]
+
+// the acronym stacked in a slide's bottom-right corner, e.g.
+// #corner-acronym("Entity", "Relationship", "Diagram")
+// A line can also be an array of parts glued together with no space,
+// each contributing its own bolded letter, e.g. #corner-acronym(("Hyper", "Text"), "Markup", "Language")
+// for HTML, where "HyperText" is one word but contributes two acronym letters.
+// Uses an absolute size (not em) so it stays visually consistent regardless
+// of what ambient text size a slide's content happens to leave behind.
+#let corner-acronym(..words) = place(bottom + right)[
+  #text(size: 27pt)[
+    #words.pos().map(w => {
+      let parts = if type(w) == array { w } else { (w,) }
+      parts.map(p => [#strong[#p.first()]#p.slice(1)]).join()
+    }).join([ \ ])
+  ]
+]
 
 // ---------- ERD building blocks (real entity boxes + crow's-foot connectors) ----------
 #let erd-pk-fill = rgb("#f7d6da")
@@ -290,9 +306,7 @@
 ]
 )
 
-#place(bottom + right, dx: 0em, dy: 0em)[
-  #text(size: 1.1em)[#strong[E]ntity \ #strong[R]elationship \ #strong[D]iagram]
-]
+#corner-acronym("Entity", "Relationship", "Diagram")
 
 == ERD: Cardinality
 
@@ -455,47 +469,75 @@ and the #hl(color: rgb("#b7e4b7"))[outer] ones are *maximum* (1 or many)
 
 == SQL <sql>
 
-#align(right)[#text(size: 0.85em)[#strong[S]tructured #strong[Q]uery #strong[L]anguage]]
+// styling matches the original slide: pink clause keywords, purple aggregate
+// functions, gray comments — here aligned into a straight column (rather
+// than trailing right after each line's code) so the bigger comment text
+// stays readable. Shifted left (negative pad) to make room for that.
+#let sql-code-size = 1.35em
+#let sql-comment-size = 1.05em
+#let sql-num-size = 0.8em
+#let sql-num-color = rgb("#8a939c")
+#let sql-kw-color = rgb("#d10099")
+#let sql-fn-color = rgb("#390087")
+#let sql-kw(code, color: sql-kw-color) = text(size: sql-code-size, fill: color)[#raw(code)]
+#let sql-cm(comment) = text(size: sql-comment-size, fill: gray)[#raw("-- " + comment)]
+#let sql-n(n) = text(size: sql-num-size, fill: sql-num-color)[#n]
 
-```sql
-SELECT (DISTINCT)  -- attributes
-FROM                -- tableA
-JOIN                -- tableB ON tableA.attribute = tableB.attribute (order doesn't matter)
-WHERE               -- attribute filters [=, !=, <>, IS, LIKE '%___%', IN ("__","__","__")]
-    AND/OR          -- you only say WHERE once, but can have many filters
-GROUP BY            -- all non-aggregated attributes when aggregating
-HAVING              -- group-based filters (not used in the SQL project)
-ORDER BY            -- attributes in ASC (default) / DESC order
-LIMIT               -- to xx top results
+#pad(left: -1.4em)[
+#no-codly(grid(
+  columns: (1.3em, auto, 1fr),
+  column-gutter: (0.45em, 0.8em),
+  row-gutter: 0.6em,
+  align: (right + horizon, left + horizon, left + horizon),
+  sql-n[1], sql-kw("SELECT"), sql-cm("attributes -- do SELECT DISTINCT to only show unique results"),
+  sql-n[2], sql-kw("FROM"), sql-cm("tableA"),
+  sql-n[3], sql-kw("JOIN"), sql-cm("tableB ON tableA.attribute = tableB.attribute (order doesn't matter)"),
+  sql-n[4], sql-kw("WHERE"), sql-cm("attribute filters [=, !=, <>, IS, LIKE '%___%', IN (\"__\",\"__\",\"__\")]"),
+  sql-n[5], sql-kw("    AND/OR"), sql-cm("you only say WHERE once, but can have many filters"),
+  sql-n[6], sql-kw("GROUP BY"), sql-cm("all non-aggregated attributes when aggregating"),
+  sql-n[7], sql-kw("HAVING"), sql-cm("group-based filters (not used in the SQL project)"),
+  sql-n[8], sql-kw("ORDER BY"), sql-cm("attributes in ASC (default) / DESC order"),
+  sql-n[9], sql-kw("LIMIT"), sql-cm("to xx top results"),
+  sql-n[10], [], [],
+  sql-n[11], grid.cell(colspan: 2)[#sql-cm("aggregate(attribute) AS newName")],
+  sql-n[12], sql-kw("count()", color: sql-fn-color), [],
+  sql-n[13], sql-kw("avg()", color: sql-fn-color), [],
+  sql-n[14], sql-kw("min()", color: sql-fn-color), [],
+  sql-n[15], sql-kw("max()", color: sql-fn-color), [],
+  sql-n[16], grid.cell(colspan: 2)[#sql-cm("etc.")],
+))
+]
 
--- aggregate(attribute) AS newName
-count()
-avg()
-min()
-max()
-etc.
-```
+#corner-acronym("Structured", "Query", "Language")
 
 == SQL: Where Use Cases
 
+// filter terms (=, !=, IS, LIKE, IN, ...) rendered noticeably bigger than
+// the surrounding text, like the original. The left/right columns are a
+// single grid so every note lines up in a straight column — except the
+// != / <> pair (and the wildcard/IN follow-up notes), which use a small
+// row-gutter to stay visually grouped, matching the original.
 #set text(size: 1.1em)
-#set par(leading: 1.2em)
-ta_name *=* "James" #h(1fr) → Exact match
+#let wc-term(body) = text(size: 1.2em, weight: "bold")[#body]
+#let wc-big-gap = 2.1em
+#let wc-small-gap = 0.2em
 
-#v(1em)
-ta_name *!=* "James" #h(1fr) → Not exact match \
-ta_name *\<\>* "James" #h(1fr) #text(style: "italic")[(these are equivalent)]
-
-#v(1em)
-ta_name *IS* NULL #h(1fr) → NULL means blank data (can also do *IS NOT* NULL)
-
-#v(1em)
-ta_name *LIKE* '%ame%' #h(1fr) → The text ("ame") is contained within the attribute \
-#h(1fr) #text(style: "italic")[(% = wildcard)]
-
-#v(1em)
-ta_name *IN* ("James", "Robert", "Frankie") \
-#h(1fr) → Exact match for #underline[any] of these
+#pad(left: -1em)[
+#grid(
+  columns: (auto, 1fr),
+  column-gutter: 0.9em,
+  row-gutter: (wc-big-gap, wc-small-gap, wc-big-gap, wc-big-gap, wc-small-gap, wc-big-gap, wc-small-gap),
+  align: (left + horizon, left + horizon),
+  [ta_name #wc-term[=] "James"], [→ Exact match],
+  [ta_name #wc-term[!=] "James"], [→ Not exact match],
+  [ta_name #wc-term[<>] "James"], [#text(style: "italic")[(these are equivalent)]],
+  [ta_name #wc-term[IS] NULL], [→ NULL means blank data \ (can also do #text(fill: black, weight: "bold")[IS NOT] NULL)],
+  [ta_name #wc-term[LIKE] '%ame%'], [→ The text #text(style: "italic")[("ame")] is contained within the attribute],
+  [], [#text(style: "italic")[(% = wildcard)]],
+  grid.cell(colspan: 2)[ta_name #wc-term[IN] ("James", "Robert", "Frankie")],
+  [], [→ Exact match for #underline[any] of these],
+)
+]
 
 == Flow Charts <flowcharts>
 
@@ -552,7 +594,7 @@ ta_name *IN* ("James", "Robert", "Frankie") \
 
 == VBA: Basics <vba>
 
-#align(right)[#text(size: 0.85em)[#strong[V]isual #strong[B]asic for #strong[A]pplications]]
+#corner-acronym("Visual", "Basic for", "Applications")
 
 ```vb
 Option Explicit 'This makes it so that you can only use variables you've declared (VERY RECOMMENDED)
@@ -799,7 +841,7 @@ End Function
 
 == HTML: Setup <html>
 
-#align(right)[#text(size: 0.85em)[#strong[H]yper#strong[T]ext #strong[M]arkup #strong[L]anguage]]
+#corner-acronym(("Hyper", "Text"), "Markup", "Language")
 
 In VS Code, inside a `.html` file, type `!` then Enter to generate:
 
@@ -945,7 +987,7 @@ To quickly format everything correctly (tabs, long lines, etc.) in VS Code: \
 
 == CSS: Basics <css>
 
-#align(right)[#text(size: 0.85em)[#strong[C]ascading #strong[S]tyle #strong[S]heets]]
+#corner-acronym("Cascading", "Style", "Sheets")
 
 ```html
 <!-- Connect CSS to HTML, in your <head> -->
