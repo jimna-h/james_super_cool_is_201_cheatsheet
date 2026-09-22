@@ -4,6 +4,7 @@
 #import themes.simple: *
 
 #import "@preview/fletcher:0.5.8" as fletcher: diagram, node, edge
+#import "@preview/cetz:0.3.4": draw as cetz-draw
 #import "@preview/codly:1.3.0": *
 #import "@preview/codly-languages:0.1.10": *
 #import "@preview/zebra:0.1.0": qrcode
@@ -41,17 +42,27 @@
 
 // small entity-relationship table, e.g.
 // #entity("company", (("PK", [company_id]), ("", [company_name]), ...))
+// Only shows lines under the header and under the PK row (plus the outer
+// border and a divider between the PK/FK column and the field names) — no
+// lines between every attribute.
 #let entity(title, rows) = table(
   columns: (auto, 1fr),
-  stroke: 0.5pt + gray,
+  stroke: none,
   inset: 4pt,
+  table.hline(y: 0, stroke: 0.5pt + gray),
+  table.vline(x: 0, stroke: 0.5pt + gray),
+  table.vline(x: 2, stroke: 0.5pt + gray),
+  table.vline(x: 1, start: 1, stroke: 0.5pt + gray),
   table.header(
     table.cell(colspan: 2, fill: luma(230))[*#title*],
   ),
+  table.hline(y: 1, stroke: 0.5pt + gray),
   ..rows.map(r => (
     text(weight: "bold")[#r.at(0)],
     text[#r.at(1)],
-  )).flatten()
+  )).flatten(),
+  table.hline(y: 2, stroke: 0.5pt + gray),
+  table.hline(y: rows.len() + 1, stroke: 0.5pt + gray),
 )
 
 #let hl(body, color: yellow) = box(fill: color.lighten(40%), inset: 2pt, outset: 2pt, radius: 2pt)[#body]
@@ -59,30 +70,134 @@
 // ---------- ERD building blocks (real entity boxes + crow's-foot connectors) ----------
 #let erd-pk-fill = rgb("#f7d6da")
 #let erd-fk-fill = rgb("#cfe0f5")
+#let erd-highlight-fill = rgb("#fff5b3")
+#let erd-header-h = 0.85cm
+#let erd-row-h = 0.72cm
+#let erd-key-col-w = 1.75cm
 
-// header row of an ERD entity box (with a small "collapse" icon, like dbdiagram.io)
-#let erow-header(coord, title, width: 6cm) = node(
+// header row of an ERD entity box (with a small "collapse" icon, like
+// dbdiagram.io). The border is drawn as part of THIS row's own box (top,
+// left, right always; bottom too, since the header is always followed by a
+// divider) — never as a separately-computed overlay — so it is always
+// exactly where this row actually is, no matter the scale or table size.
+#let erow-header(coord, title, width: 6cm, fill: luma(230), scale: 1.0, stroke: 0.5pt + gray) = node(
   coord,
-  align(left + horizon)[
-    #box(width: 7pt, height: 7pt, stroke: 0.5pt + gray)[#align(center + horizon)[#text(size: 6pt)[#sym.minus]]]
-    #h(4pt) #text(weight: "bold", size: 11pt)[#title]
+  box(width: width, height: erd-header-h * scale, fill: fill, stroke: (top: stroke, bottom: stroke, left: stroke, right: stroke))[
+    #align(left + horizon)[
+      #pad(left: 4pt * scale)[
+        #box(width: 7pt * scale, height: 7pt * scale, stroke: 0.5pt + gray)[#align(center + horizon)[#text(size: 6pt * scale)[#sym.minus]]]
+        #h(4pt * scale) #text(weight: "bold", size: 11pt * scale)[#title]
+      ]
+    ]
   ],
-  shape: rect, stroke: 0.5pt + gray, fill: luma(230),
-  width: width, height: 0.85cm, outset: 0pt,
+  shape: rect, stroke: none, fill: none, inset: 0pt,
+  width: width, height: erd-header-h * scale, outset: 0pt,
 )
 
-// one attribute row of an ERD entity box
-#let erow(coord, key, label, width: 6cm, fill: white, name: none) = node(
+// one attribute row of an ERD entity box. Left/right borders are always
+// drawn (so consecutive rows form one continuous outer side); `bottom: true`
+// adds the divider under the PK row or the outer border under the last row.
+// The PK/FK-column divider is drawn as part of this SAME grid (not as a
+// separately-computed overlay), so it is always exactly where the grid
+// actually put the column boundary, no matter the row's key/scale/etc.
+#let erow(coord, key, label, width: 6cm, fill: white, name: none, scale: 1.0, key-divider: false, bottom: false, stroke: 0.5pt + gray) = node(
   coord,
-  align(left + horizon)[
-    #grid(columns: (1.5cm, 1fr), align: left + horizon,
-      text(weight: "bold", size: 11pt)[#key],
-      text(size: 11pt)[#label],
+  box(width: width, height: erd-row-h * scale, fill: fill, stroke: (left: stroke, right: stroke, bottom: if bottom { stroke } else { none }))[
+    #align(left + horizon)[
+      #grid(columns: (erd-key-col-w * scale, 1fr), align: left + horizon,
+        ..(if key-divider { (grid.vline(x: 1, stroke: stroke),) } else { () }),
+        pad(left: 4pt * scale)[#text(weight: "bold", size: 11pt * scale)[#key]],
+        text(size: 11pt * scale)[#label],
+      )
+    ]
+  ],
+  shape: rect, stroke: none, fill: none, inset: 0pt,
+  width: width, height: erd-row-h * scale, outset: 0pt, name: name,
+)
+
+// a full small entity box: header + PK row + attribute rows, e.g.
+// #erd-box(0, 0, "Store", "StoreID", ("StoreLocation", "SquareFootage"))
+#let erd-box(col, row, title, pk, attrs, width: 3.6cm, header-fill: luma(230), pk-fill: erd-pk-fill, scale: 1.0) = (
+  erow-header((col, row), title, width: width, fill: header-fill, scale: scale),
+  erow((col, row + 1), "PK", underline[#pk], width: width, fill: pk-fill, scale: scale, key-divider: true, bottom: true),
+  ..attrs.enumerate().map(((i, a)) => erow(
+    (col, row + 2 + i), "", a, width: width, scale: scale, key-divider: true, bottom: i == attrs.len() - 1,
+  ))
+)
+
+// a pair of small entity boxes connected by a crow's-foot relationship. A
+// highlighter-style patch (like #hl) sits behind the mark nearest the LEFT
+// entity — matching the "reading right-to-left" (orange) sentence — and
+// behind the mark nearest the RIGHT entity — matching the "reading
+// left-to-right" (blue) sentence — so students can see which mark answers
+// which sentence, without changing the line/mark's own color. e.g.
+// #erd-pair("Store", "StoreID", ("StoreLocation",), "Manager", "ManagerID", ("FirstName",), left-mark: "1", right-mark: "1")
+#let erd-pair(left-name, left-pk, left-attrs, right-name, right-pk, right-attrs, left-mark: "1", right-mark: "1", width: 4.4cm) = {
+  let gap = 1.6cm
+  let mark-cy = erd-header-h + erd-row-h / 2
+  box[
+    #place(top + left, dx: width - 0.35cm, dy: mark-cy - 0.2cm)[
+      #box(fill: rgb("#f4d9a0").lighten(35%), width: 0.7cm, height: 0.4cm)
+    ]
+    #place(top + left, dx: width + gap - 0.35cm, dy: mark-cy - 0.2cm)[
+      #box(fill: rgb("#c2d6f4").lighten(35%), width: 0.7cm, height: 0.4cm)
+    ]
+    #diagram(
+      node-stroke: none,
+      spacing: (gap, 0pt),
+      ..erd-box(0, 0, left-name, left-pk, left-attrs, width: width, header-fill: rgb("#c2d6f4"), pk-fill: white),
+      ..erd-box(1, 0, right-name, right-pk, right-attrs, width: width, header-fill: rgb("#f4d9a0"), pk-fill: white),
+      edge((0, 1), (1, 1), left-mark + "-" + right-mark, stroke: 0.6pt + black),
     )
-  ],
-  shape: rect, stroke: 0.5pt + gray, fill: fill,
-  width: width, height: 0.72cm, outset: 0pt, name: name,
+  ]
+}
+
+// a min/max cardinality connector: a plain line between two tables, with
+// combined min+max crow's-foot marks at each end (e.g. "1?" = zero-or-one,
+// "n!" = one-or-many). The pink band highlights the two INNER (minimum)
+// symbols and the green band highlights the two OUTER (maximum) symbols,
+// matching the "inner = minimum, outer = maximum" callout above. The zero
+// (circle) symbol is filled with the same "inner" pink.
+#let erd-minmax-line-w = 8.5cm
+#let erd-minmax-inner-w = 0.9cm
+#let erd-minmax-outer-w = 0.7cm
+#let erd-minmax-row-h = 1.8cm
+#let erd-minmax-row-gutter = 1em
+#let erd-minmax-pink = rgb("#f4c2c2")
+#let erd-minmax-green = rgb("#b7e4b7")
+
+// "mandatory one" drawn as two ticks (min=1, max=1), matching the original's
+// double-stick symbol — fletcher's built-in "1" mark is only a single tick.
+#let erd-mandatory-one = (
+  inherit: "crowfoot",
+  zero: false, one: false, many: false,
+  draw: mark => {
+    cetz-draw.line((0, mark.one-width), (0, -mark.one-width))
+    cetz-draw.line((-mark.gap * 1.4, mark.one-width), (-mark.gap * 1.4, -mark.one-width))
+  },
 )
+#let erd-mark(name) = if name == "11" { erd-mandatory-one } else { (inherit: name, zero-fill: erd-minmax-pink) }
+
+// the bands extend a bit past the row's own height, into the row-gutter
+// below, so that consecutive rows' bands visually form one continuous
+// stripe instead of four separate broken-up rectangles. (The very last
+// row's band just extends a little into blank space, which is harmless.)
+#let erd-minmax-row(left-mark, right-mark, extend: true) = box(width: 100%, height: erd-minmax-row-h)[
+  #let band-h = erd-minmax-row-h + (if extend { erd-minmax-row-gutter } else { 0pt })
+  #place(top + left, dx: 0pt, dy: 0pt)[#box(fill: erd-minmax-green.lighten(35%), width: erd-minmax-outer-w, height: band-h)]
+  #place(top + left, dx: erd-minmax-outer-w, dy: 0pt)[#box(fill: erd-minmax-pink.lighten(35%), width: erd-minmax-inner-w, height: band-h)]
+  #place(top + left, dx: erd-minmax-line-w - erd-minmax-outer-w - erd-minmax-inner-w, dy: 0pt)[#box(fill: erd-minmax-pink.lighten(35%), width: erd-minmax-inner-w, height: band-h)]
+  #place(top + left, dx: erd-minmax-line-w - erd-minmax-outer-w, dy: 0pt)[#box(fill: erd-minmax-green.lighten(35%), width: erd-minmax-outer-w, height: band-h)]
+  #place(top + left, dx: 0pt, dy: erd-minmax-row-h / 2 - 0.5pt)[
+    #diagram(
+      node-stroke: none,
+      spacing: (erd-minmax-line-w, 0pt),
+      node((0, 0), [], width: 0.01pt, height: 0.01pt),
+      node((1, 0), [], width: 0.01pt, height: 0.01pt),
+      edge((0, 0), (1, 0), marks: (erd-mark(left-mark), erd-mark(right-mark)), stroke: 1.2pt + black, mark-scale: 190%),
+    )
+  ]
+]
 
 // ---------- slides ----------
 
@@ -132,35 +247,35 @@
 #grid(columns: (auto, 11.5cm), gutter: 1.2em,
 [
   #diagram(
-    node-stroke: 0.5pt + gray,
+    node-stroke: none,
     spacing: (1.6cm, 0pt),
     erow-header((0, 0), "company", width: 4.6cm),
-    erow((0, 1), "PK", underline[company_id], width: 4.6cm, fill: erd-pk-fill, name: <company-pk>),
-    erow((0, 2), "", "company_name", width: 4.6cm),
-    erow((0, 3), "", "employees", width: 4.6cm),
-    erow((0, 4), "", "followers", width: 4.6cm),
-    erow((0, 5), "", "industry", width: 4.6cm),
-    erow((0, 6), "", "state", width: 4.6cm),
-    erow((0, 7), "", "country", width: 4.6cm),
-    erow((0, 8), "", "city", width: 4.6cm),
-    erow((0, 9), "", "zip", width: 4.6cm),
+    erow((0, 1), "PK", underline[company_id], width: 4.6cm, fill: erd-pk-fill, name: <company-pk>, key-divider: true, bottom: true),
+    erow((0, 2), "", "company_name", width: 4.6cm, key-divider: true),
+    erow((0, 3), "", "employees", width: 4.6cm, key-divider: true),
+    erow((0, 4), "", "followers", width: 4.6cm, key-divider: true),
+    erow((0, 5), "", "industry", width: 4.6cm, key-divider: true),
+    erow((0, 6), "", "state", width: 4.6cm, key-divider: true),
+    erow((0, 7), "", "country", width: 4.6cm, key-divider: true),
+    erow((0, 8), "", "city", width: 4.6cm, key-divider: true),
+    erow((0, 9), "", "zip", width: 4.6cm, key-divider: true, bottom: true),
 
     erow-header((1, 0), "posting", width: 5.4cm),
-    erow((1, 1), "PK", underline[job_id], width: 5.4cm, fill: erd-pk-fill),
-    erow((1, 2), "", "title", width: 5.4cm),
-    erow((1, 3), "", "description", width: 5.4cm),
-    erow((1, 4), "", "pay_period", width: 5.4cm),
-    erow((1, 5), "", "work_type", width: 5.4cm),
-    erow((1, 6), "", "job_location", width: 5.4cm),
-    erow((1, 7), "", "applies", width: 5.4cm),
-    erow((1, 8), "", "remote", width: 5.4cm),
-    erow((1, 9), "", "views", width: 5.4cm),
-    erow((1, 10), "", "level", width: 5.4cm),
-    erow((1, 11), "", "sponsored", width: 5.4cm),
-    erow((1, 12), "", "compensation", width: 5.4cm),
-    erow((1, 13), "", "job_domain", width: 5.4cm),
-    erow((1, 14), "FK", "company_id", width: 5.4cm, fill: erd-fk-fill, name: <posting-fk>),
-    erow((1, 15), "FK", "ben_pack_id", width: 5.4cm),
+    erow((1, 1), "PK", underline[job_id], width: 5.4cm, fill: erd-pk-fill, key-divider: true, bottom: true),
+    erow((1, 2), "", "title", width: 5.4cm, key-divider: true),
+    erow((1, 3), "", "description", width: 5.4cm, key-divider: true),
+    erow((1, 4), "", "pay_period", width: 5.4cm, key-divider: true),
+    erow((1, 5), "", "work_type", width: 5.4cm, key-divider: true),
+    erow((1, 6), "", "job_location", width: 5.4cm, key-divider: true),
+    erow((1, 7), "", "applies", width: 5.4cm, key-divider: true),
+    erow((1, 8), "", "remote", width: 5.4cm, key-divider: true),
+    erow((1, 9), "", "views", width: 5.4cm, key-divider: true),
+    erow((1, 10), "", "level", width: 5.4cm, key-divider: true),
+    erow((1, 11), "", "sponsored", width: 5.4cm, key-divider: true),
+    erow((1, 12), "", "compensation", width: 5.4cm, key-divider: true),
+    erow((1, 13), "", "job_domain", width: 5.4cm, key-divider: true),
+    erow((1, 14), "FK", "company_id", width: 5.4cm, fill: erd-fk-fill, name: <posting-fk>, key-divider: true),
+    erow((1, 15), "FK", "ben_pack_id", width: 5.4cm, key-divider: true, bottom: true),
 
     edge(<company-pk>, (0.5, 1), (0.5, 14), <posting-fk>, "1-n", stroke: 0.6pt + black, layer: 1),
   )
@@ -181,79 +296,162 @@
 
 == ERD: Cardinality
 
-#set text(size: 0.92em)
-#set par(spacing: 0.55em)
-Read #underline[left-to-right] AND #underline[right-to-left]
+#set text(size: 0.78em)
+#set par(spacing: 0.3em)
+#grid(columns: (auto, 1fr), column-gutter: 1.2em, align: (left + top, left + top),
+  [
+    #erd-pair(
+      "Store", "StoreID", ("StoreLocation", "SquareFootage", "YearBuilt"),
+      "Manager", "ManagerID", ("FirstName", "LastName", "DateHired"),
+      left-mark: "1", right-mark: "1",
+    )
+    #v(0.6em)
+    #erd-pair(
+      "Customer", "CustomerID", ("FirstName", "LastName", "MembershipLevel"),
+      "Order", "OrderID", ("OrderDate", "TotalAmount", "CardNumber"),
+      left-mark: "1", right-mark: "n",
+    )
+    #v(0.6em)
+    #erd-pair(
+      "Student", "StudentID", ("FirstName", "LastName", "DeclaredMajor"),
+      "Course", "CourseID", ("CourseTitle", "Credits", "Location"),
+      left-mark: "n", right-mark: "n",
+    )
+  ],
+  [
+    #underline[Read #hl(color: rgb("#c2d6f4"))[left-to-right] AND #hl(color: rgb("#f4d9a0"))[right-to-left]]
 
-#v(0.2em)
-*One to One (1:1)* \
-#hl(color: rgb("#c2d6f4"))[A store has one manager] #sym.space
-#hl(color: rgb("#f4d9a0"))[A manager works at one store]
+    #v(0.7em)
+    *One to One (1:1)* \
+    #pad(left: 1em)[
+      #hl(color: rgb("#c2d6f4"))[A store has one manager] #sym.space
+      #hl(color: rgb("#f4d9a0"))[A manager works at one store]
+    ]
 
-*One to Many (1:N)* \
-#hl(color: rgb("#c2d6f4"))[A customer can have multiple orders] #sym.space
-#hl(color: rgb("#f4d9a0"))[An order belongs to one customer]
+    #v(0.7em)
+    *One to Many (1:N)* \
+    #pad(left: 1em)[
+      #hl(color: rgb("#c2d6f4"))[A customer can have multiple orders] #sym.space
+      #hl(color: rgb("#f4d9a0"))[An order belongs to one customer]
+    ]
 
-*Many to Many (M:N)* \
-#hl(color: rgb("#c2d6f4"))[A student can enroll in many courses] #sym.space
-#hl(color: rgb("#f4d9a0"))[A course can have lots of students]
+    #v(0.7em)
+    *Many to Many (M:N)* \
+    #pad(left: 1em)[
+      #hl(color: rgb("#c2d6f4"))[A student can enroll in many courses] #sym.space
+      #hl(color: rgb("#f4d9a0"))[A course can have lots of students]
+    ]
 
-#v(0.2em)
-#text(style: "italic", size: 0.85em)[Note! M:N cardinality requires a composite table (next slide)]
+    #v(0.5em)
+    #text(style: "italic", size: 0.7em)[Note! M:N cardinality requires a composite table (next slide)]
+  ],
+)
 
 == ERD: Composite Table
 
-#set text(size: 0.75em)
-#grid(columns: (1fr, 1fr, 1fr), gutter: 0.8em,
-entity("movie", (
-  ("PK", underline[movieid]), ("", [title]), ("", [mpaa_rating]),
-  ("", [budget]), ("", [gross]), ("", [release_date]),
-  ("", [genre]), ("", [runtime]), ("", [rating]),
-  ("", [rating_count]),
-)),
-entity("character", (
-  ("PK/FK", underline(hl(color: rgb("#c2d6f4"))[movieid])),
-  ("PK/FK", underline(hl(color: rgb("#f4c2c2"))[actorid])),
-  ("", [character_name]), ("", [credit_order]),
-  ("", hl[pay]), ("", [screentime]),
-)),
-entity("actor", (
-  ("PK", underline[actorid]), ("", [name]), ("", [date_of_birth]),
-  ("", [birth_city]), ("", [birth_country]), ("", [height_inches]),
-  ("", [biography]), ("", [gender]), ("", [ethnicity]), ("", [networth]),
-))
-)
+#let mw = 7.6cm
+#let cw = 6.6cm
+#let aw = 7.6cm
+#let gap = 2.8cm
+#let es = 1.22
+#align(center)[#box[
+  #diagram(
+    node-stroke: none,
+    spacing: (gap, 0pt),
+    erow-header((0, 0), "movie", width: mw, scale: es),
+    erow((0, 1), "PK", underline[movieid], width: mw, fill: erd-pk-fill, name: <movie-pk>, scale: es, key-divider: true, bottom: true),
+    erow((0, 2), "", "title", width: mw, scale: es, key-divider: true),
+    erow((0, 3), "", "mpaa_rating", width: mw, scale: es, key-divider: true),
+    erow((0, 4), "", "budget", width: mw, scale: es, key-divider: true),
+    erow((0, 5), "", "gross", width: mw, scale: es, key-divider: true),
+    erow((0, 6), "", "release_date", width: mw, scale: es, key-divider: true),
+    erow((0, 7), "", "genre", width: mw, scale: es, key-divider: true),
+    erow((0, 8), "", "runtime", width: mw, scale: es, key-divider: true),
+    erow((0, 9), "", "rating", width: mw, scale: es, key-divider: true),
+    erow((0, 10), "", "rating_count", width: mw, scale: es, key-divider: true, bottom: true),
+
+    erow-header((1, 0), "character", width: cw, scale: es),
+    erow((1, 1), "PK/FK", underline[movieid], width: cw, fill: erd-fk-fill, name: <char-movieid>, scale: es, key-divider: true),
+    erow((1, 2), "PK/FK", underline[actorid], width: cw, fill: erd-pk-fill, name: <char-actorid>, scale: es, key-divider: true, bottom: true),
+    erow((1, 3), "", "character_name", width: cw, scale: es, key-divider: true),
+    erow((1, 4), "", "credit_order", width: cw, scale: es, key-divider: true),
+    erow((1, 5), "", "pay", width: cw, fill: erd-highlight-fill, scale: es, key-divider: true),
+    erow((1, 6), "", "screentime", width: cw, scale: es, key-divider: true, bottom: true),
+
+    erow-header((2, 0), "actor", width: aw, scale: es),
+    erow((2, 1), "PK", underline[actorid], width: aw, fill: erd-pk-fill, name: <actor-pk>, scale: es, key-divider: true, bottom: true),
+    erow((2, 2), "", "name", width: aw, scale: es, key-divider: true),
+    erow((2, 3), "", "date_of_birth", width: aw, scale: es, key-divider: true),
+    erow((2, 4), "", "birth_city", width: aw, scale: es, key-divider: true),
+    erow((2, 5), "", "birth_country", width: aw, scale: es, key-divider: true),
+    erow((2, 6), "", "height_inches", width: aw, scale: es, key-divider: true),
+    erow((2, 7), "", "biography", width: aw, scale: es, key-divider: true),
+    erow((2, 8), "", "gender", width: aw, scale: es, key-divider: true),
+    erow((2, 9), "", "ethnicity", width: aw, scale: es, key-divider: true),
+    erow((2, 10), "", "networth", width: aw, scale: es, key-divider: true, bottom: true),
+
+    edge(<movie-pk>, <char-movieid>, "1-n", stroke: 0.6pt + black),
+    edge(<char-actorid>, (1.5, 2), (1.5, 1), <actor-pk>, "n-1", stroke: 0.6pt + black, layer: 1),
+  )
+]]
 
 #v(0.3em)
-#align(center)[#text(size: 0.85em)[
-To know how much money Tom Hanks got #hl[paid] to play Woody in _Toy Story_,
+#align(center)[#box(width: 85%)[#text(size: 0.85em)[
+To know how much money Tom Hanks got #box(fill: erd-highlight-fill, inset: 2pt, outset: 2pt, radius: 2pt)[paid] to play Woody in _Toy Story_,
 you need to know both the #hl(color: rgb("#c2d6f4"))[movie] and the #hl(color: rgb("#f4c2c2"))[actor]. His pay is probably different than when he was Woody in
 _Toy Story 2_, or when he was Forrest Gump in _Forrest Gump_
-]]
+]]]
 
 == ERD: Minimum / Maximum Cardinality
 
-#text(size: 0.9em)[
+#align(center)[#text(size: 1.05em)[
 The #hl(color: rgb("#f4c2c2"))[inner] ones are *minimum* (0 or 1) \
 and the #hl(color: rgb("#b7e4b7"))[outer] ones are *maximum* (1 or many)
-]
+]]
 
-#v(0.4em)
-#table(
-  columns: (1fr, 1fr),
-  stroke: 0.5pt + gray,
-  inset: 6pt,
-  table.header([*Table A*], [*Table B*]),
-  [1 B or many B], [1 A or 1 A],
-  [0 B or many B], [1 A or many A],
-  [1 B or 1 B], [0 A or 1 A],
-  [0 B or 1 B], [0 A or many A],
+#v(0.8em)
+#grid(
+  columns: (auto, 1fr, auto, 1fr), column-gutter: (0.5em, 0.35em, 1.4em), row-gutter: erd-minmax-row-gutter,
+  align: (center + horizon, center + horizon, center + horizon, left + horizon),
+  grid.cell(rowspan: 4)[#rotate(-90deg, reflow: true)[#text(size: 1.05em, weight: "bold")[TABLE A]]],
+  erd-minmax-row("1?", "11"),
+  grid.cell(rowspan: 4)[#rotate(-90deg, reflow: true)[#text(size: 1.05em, weight: "bold")[TABLE B]]],
+  [
+    #text(size: 1.15em)[
+      A could have #hl(color: rgb("#f4c2c2"))[1 B] or #hl(color: rgb("#b7e4b7"))[1 B] \
+      B could have #hl(color: rgb("#f4c2c2"))[0 A] or #hl(color: rgb("#b7e4b7"))[1 A]
+    ]
+  ],
+
+  erd-minmax-row("n!", "n?"),
+  [
+    #text(size: 1.15em)[
+      A could have #hl(color: rgb("#f4c2c2"))[0 B] or #hl(color: rgb("#b7e4b7"))[many B] \
+      B could have #hl(color: rgb("#f4c2c2"))[1 A] or #hl(color: rgb("#b7e4b7"))[many A]
+    ]
+  ],
+
+  erd-minmax-row("n?", "1?"),
+  [
+    #text(size: 1.15em)[
+      A could have #hl(color: rgb("#f4c2c2"))[0 B] or #hl(color: rgb("#b7e4b7"))[1 B] \
+      B could have #hl(color: rgb("#f4c2c2"))[0 A] or #hl(color: rgb("#b7e4b7"))[many A]
+    ]
+  ],
+
+  erd-minmax-row("11", "n!", extend: false),
+  [
+    #text(size: 1.15em)[
+      A could have #hl(color: rgb("#f4c2c2"))[1 B] or #hl(color: rgb("#b7e4b7"))[many B] \
+      B could have #hl(color: rgb("#f4c2c2"))[1 A] or #hl(color: rgb("#b7e4b7"))[1 A]
+    ]
+  ],
 )
 
-#v(0.4em)
-#text(style: "italic", size: 0.85em)[
-  Think: a student could have 0 cars, but they could also have multiple.
-]
+#v(0.5em)
+#align(center)[#text(style: "italic", size: 1em)[
+  Think: a student could have #hl(color: rgb("#f4c2c2"))[0 cars], but they could also have #hl(color: rgb("#b7e4b7"))[multiple].
+]]
 
 == SQL <sql>
 
@@ -301,11 +499,11 @@ ta_name *IN* ("James", "Robert", "Frankie") \
 
 == Flow Charts <flowcharts>
 
-#set text(size: 0.58em)
+#set text(size: 0.52em)
 #grid(columns: (1fr, 1.5fr), gutter: 1.2em,
 [
   #text(size: 0.9em)[go to \ draw.io]
-  #scale(x: 68%, y: 68%, reflow: true)[
+  #scale(x: 62%, y: 62%, reflow: true)[
     #diagram(
       node-stroke: 0.7pt,
       spacing: (0.8cm, 0.9cm),
@@ -326,7 +524,7 @@ ta_name *IN* ("James", "Robert", "Frankie") \
 [
   #text(size: 1.05em, weight: "bold")[EXAMPLE: How to solve 1+1]
   #v(0.15em)
-  #scale(x: 68%, y: 68%, reflow: true)[
+  #scale(x: 62%, y: 62%, reflow: true)[
     #diagram(
       node-stroke: 0.7pt,
       edge-stroke: 0.7pt,
