@@ -628,6 +628,10 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
 == SQL <sql>
 #slide-text(0.75em)[
 
+// corner note, same size/spot as Flow Charts' "go to draw.io" (one line so
+// it stays clear of the code below)
+#place(top + left, text(size: 0.69em)[go to #link("https://gaskination.com/sql/")[gaskination.com/sql]])
+
 // styling matches the original slide: pink clause keywords, purple aggregate
 // functions, gray comments — here aligned into a straight column (rather
 // than trailing right after each line's code) so the bigger comment text
@@ -648,7 +652,7 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
   column-gutter: (0.45em, 0.8em),
   row-gutter: 0.6em,
   align: (right + horizon, left + horizon, left + horizon),
-  sql-n[1], sql-kw("SELECT"), sql-cm("attributes -- do SELECT DISTINCT to only show unique results"),
+  sql-n[1], sql-kw("SELECT"), sql-cm("attributes -- SELECT * for all, SELECT DISTINCT for unique results"),
   sql-n[2], sql-kw("FROM"), sql-cm("tableA"),
   sql-n[3], sql-kw("JOIN"), sql-cm("tableB ON tableA.attribute = tableB.attribute (order doesn't matter)"),
   sql-n[4], sql-kw("WHERE"), sql-cm("attribute filters [=, !=, <>, IS, LIKE '%___%', IN (\"__\",\"__\",\"__\")]"),
@@ -693,7 +697,7 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
   [ta_name #wc-term[<>] "James"], [#text(style: "italic")[(these are equivalent)]],
   [ta_name #wc-term[IS] NULL], [→ NULL means blank data \ (can also do #text(fill: black, weight: "bold")[IS NOT] NULL)],
   [ta_name #wc-term[LIKE] '%ame%'], [→ The text #text(style: "italic")[("ame")] is contained within the attribute],
-  [], [#text(style: "italic")[(% = wildcard)]],
+  [], [#text(style: "italic")[( \_ = one wildcard,  % = any number of wildcards)]],
   grid.cell(colspan: 2)[ta_name #wc-term[IN] ("James", "Robert", "Frankie")],
   [], [→ Exact match for #underline[any] of these],
 )
@@ -703,55 +707,58 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
 == Flow Charts <flowcharts>
 #slide-text(0.4em)[
 
-#place(top + left, text(size: 0.85em)[go to \ #link("https://draw.io")[draw.io]])
-#place(bottom + left, text(size: 0.85em)[file \> export as \> pdf])
+#place(top + left, text(size: 1.3em)[go to #link("https://draw.io")[draw.io]])
+#place(bottom + left, text(size: 1.3em)[file \> export as \> pdf])
 #grid(columns: (1fr, 1fr), column-gutter: 1.2em, inset: (left: 0.7em, right: 0.7em),
   align: (center, center),
   stroke: (x, y) => if x == 1 { (left: 0.7pt + black) } else { none },
 [
   #scale(x: 82%, y: 82%, reflow: true)[
+    #set text(size: 1.45em)
     #diagram(
       node-stroke: 0.7pt,
-      spacing: (0.7cm, 1.3cm),
-      node((0,0), [start/end], shape: fletcher.shapes.ellipse, width: 2.8cm, height: 1.9cm),
-      node((1,0), align(left)[you can only have ONE start \ #v(0.3em) but you CAN have multiple ends], shape: rect, stroke: none, width: 5.2cm),
-      node((0,1), [process \ (something happens)], shape: rect, width: 3.4cm, height: 1.9cm),
-      node((0,2), [decision \ (T/F or Y/N)], shape: fletcher.shapes.diamond, width: 2.9cm, height: 2.8cm),
-      node((1,2), align(left)[decisions are the ONLY thing that can have more than one arrow pointing OUT of them], shape: rect, stroke: none, width: 5.2cm),
-      node((0,3), [input/output \ (info entered or displayed)], shape: fletcher.shapes.parallelogram, width: 4.2cm, height: 1.8cm),
-      node((0,4), [connector], shape: fletcher.shapes.circle, width: 2cm),
-      node((1,4), align(left)[connectors are the ONLY thing that can have more than one arrow pointing INTO them], shape: rect, stroke: none, width: 5.2cm),
+      spacing: (0.7cm, 0.6cm),
+      node((0,0), [start/end], shape: fletcher.shapes.ellipse, width: 3.4cm, height: 2cm),
+      node((1,0), align(left)[you can only have ONE start \ #v(0.3em) but you CAN have multiple ends], shape: rect, stroke: none, width: 7cm),
+      node((0,1), [process \ (something happens)], shape: rect, width: 5.6cm, height: 2cm),
+      node((0,2), [decision \ (T/F or Y/N)], shape: fletcher.shapes.diamond, width: 3.4cm, height: 2.4cm),
+      node((1,2), align(left)[decisions are the ONLY thing that can have more than one arrow pointing OUT of them], shape: rect, stroke: none, width: 7cm),
+      node((0,3), [input/output \ (info entered \ or displayed)], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 2.3cm),
+      node((0,4), [connector], shape: fletcher.shapes.circle, width: 2.7cm),
+      node((1,4), align(left)[connectors are the ONLY thing that can have more than one arrow pointing INTO them], shape: rect, stroke: none, width: 7cm),
     )
   ]
 ],
 [
-  #text(size: 1.05em, weight: "bold")[EXAMPLE: How to solve 1+1]
+  #text(size: 1.4em, weight: "bold")[EXAMPLE: How to solve 1+1]
   #v(1.4em)
-  #scale(x: 65%, y: 65%, reflow: true)[
+  // nudged right so the "do 1+1" box doesn't graze the center divider
+  #move(dx: 14pt, scale(x: 72%, y: 72%, reflow: true)[
+    #set text(size: 1.5em)
     #diagram(
       node-stroke: 0.7pt,
       edge-stroke: 0.7pt,
-      spacing: (2.7cm, 1.6cm),
-      node((1,0), [start], shape: fletcher.shapes.ellipse, width: 2.1cm, height: 1.4cm),
+      spacing: (2.2cm, 0.8cm),
+      node((1,0), [start], shape: fletcher.shapes.ellipse, width: 2.6cm, height: 1.6cm),
       edge((1,0), (1,1), "-|>"),
-      node((1,1), [do you have a \ calculator?], shape: fletcher.shapes.diamond, width: 3.5cm, height: 2.8cm),
+      node((1,1), [do you have a \ calculator?], shape: fletcher.shapes.diamond, width: 3.9cm, height: 2.6cm),
       edge((1,1), (0,1), "-|>", [no], label-side: center),
-      node((0,1), [do 1+1 in \ your head], shape: rect, width: 2.6cm, height: 1.5cm),
+      node((0,1), [do 1+1 in \ your head], shape: rect, width: 3.6cm, height: 1.9cm),
       edge((1,1), (2,1), "-|>", [yes], label-side: center),
-      node((2,1), [enter "1+1=" \ into calculator], shape: fletcher.shapes.parallelogram, width: 3.9cm, height: 1.6cm),
+      node((2,1), [enter "1+1=" \ into calculator], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 1.9cm),
       edge((2,1), (2,2), "-|>"),
-      node((2,2), [calculator processes \ the math], shape: rect, width: 3.4cm, height: 1.6cm),
+      node((2,2), [calculator processes \ the math], shape: rect, width: 5.6cm, height: 1.9cm),
       edge((2,2), (2,3), "-|>"),
-      node((2,3), [calculator displays \ the result], shape: fletcher.shapes.parallelogram, width: 3.9cm, height: 1.6cm),
+      node((2,3), [calculator displays \ the result], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 1.9cm),
       edge((0,1), (0,4), "-"),
       edge((0,4), (1,4), "-|>"),
       edge((2,3), (2,4), "-"),
       edge((2,4), (1,4), "-|>"),
       node((1,4), [], shape: fletcher.shapes.circle, width: 0.7cm),
       edge((1,4), (1,5), "-|>"),
-      node((1,5), [end], shape: fletcher.shapes.ellipse, width: 2.1cm, height: 1.4cm),
+      node((1,5), [end], shape: fletcher.shapes.ellipse, width: 2.6cm, height: 1.6cm),
     )
-  ]
+  ])
 ]
 )
 ]
@@ -1095,9 +1102,8 @@ End Function
 
 == Tableau <tableau>
 
-- "Default" settings are usually a good starting point — check them first
-- Switching the x- and y-axis can reveal a clearer story
-- Watch your sort/ordering — Tableau doesn't always order the way you expect
+- If the assignment says "default", it means that you don't have to change anything. It is the default setting inside Tableau
+- Switching the x- and y-axis can reveal a clearer story (show an image of the button that does it)
 
 == Solver <solver>
 #hide-slide-number()
