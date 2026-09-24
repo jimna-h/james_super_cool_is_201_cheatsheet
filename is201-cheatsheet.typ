@@ -16,12 +16,11 @@
   aspect-ratio: "16-9",
   header: none,
   footer-right: context {
-    // hide the slide number on pages with a corner acronym, so the acronym
-    // can sit in the true corner — matching the original slides, which
-    // don't number those pages either.
+    // hide the slide number on pages marked with `hide-slide-number()`
+    // (every corner-acronym page, plus any page that needs the room)
     let pg = here().page()
-    let has-acronym = query(<corner-acronym>).any(m => m.location().page() == pg)
-    if not has-acronym {
+    let hidden = query(<hide-slide-number>).any(m => m.location().page() == pg)
+    if not hidden {
       utils.slide-counter.display() + " / " + utils.last-slide-number
     }
   },
@@ -134,6 +133,25 @@
 
 #let hl(body, color: yellow) = box(fill: color.lighten(40%), inset: 2pt, outset: 2pt, radius: 2pt)[#body]
 
+// shows only the (x, y, w, h) pixel region of an image that is `size` =
+// (width, height) pixels, scaled so that region comes out `width` wide —
+// crops without touching the source file, e.g.
+// #crop-img("assets/img/shot.png", (642, 256), 52, 38, 534, 173, width: 10cm)
+#let crop-img(src, size, x, y, w, h, width: 10cm, radius: 0pt) = {
+  let (iw, ih) = size
+  let s = width / w
+  // negative padding on all four sides trims the image's frame to exactly
+  // the crop region. (Offsetting with place/move/a one-sided pad leaves an
+  // oversized frame, which an inherited `horizon` alignment — e.g. from a
+  // grid — vertically re-centers, shifting the crop.)
+  box(clip: true, radius: radius,
+    pad(
+      top: -y * s, left: -x * s,
+      bottom: -(ih - y - h) * s, right: -(iw - x - w) * s,
+      image(src, width: iw * s),
+    ))
+}
+
 // the acronym stacked in a slide's bottom-right corner, e.g.
 // #corner-acronym("Entity", "Relationship", "Diagram")
 // A line can also be an array of parts glued together with no space,
@@ -141,8 +159,12 @@
 // for HTML, where "HyperText" is one word but contributes two acronym letters.
 // Uses an absolute size (not em) so it stays visually consistent regardless
 // of what ambient text size a slide's content happens to leave behind.
-// (the metadata marker tells the footer to hide this page's slide number)
-#let corner-acronym(..words) = [#metadata(none) <corner-acronym>] + place(bottom + right)[
+// marks the current page so the footer leaves off its slide number
+#let hide-slide-number() = [#metadata(none) <hide-slide-number>]
+
+// (hides the page's slide number so the acronym can sit in the true corner,
+// matching the original slides, which don't number those pages either)
+#let corner-acronym(..words) = hide-slide-number() + place(bottom + right)[
   #text(size: 27pt)[
     #words.pos().map(w => {
       let parts = if type(w) == array { w } else { (w,) }
@@ -361,7 +383,7 @@
 
 #title-slide[
   #box(width: 100%)[
-    #image("Patsy-Coconuts.jpg", width: 100%)
+    #image("assets/img/patsy-coconuts.jpg", width: 100%)
     #place(top + right, dx: -27%, dy: 36%)[
       #box(fill: white, inset: 3pt)[#text(size: 1.7em)[You]]
     ]
@@ -961,41 +983,113 @@ End Function
 ]
 
 == Statistics <statistics>
-#slide-text(0.85em)[
+#slide-text(0.7em)[
 
-#grid(columns: (1fr, 1fr), gutter: 1.5em,
-[
-  *Null Hypothesis* \
-  H#sub[0]: No x's are significant
+#let stat-line = 1pt + luma(90)
+#let stat-green = rgb("#b7e4b7")
+// correlation strength: same green on both sides, fullest at ±1, white at 0
+#let stat-strength = gradient.linear(stat-green, white, stat-green)
+#let stat-gray = luma(110)
 
-  *Alt Hypothesis* \
-  H#sub[A]: At least one x is significant
+// a number line for reading a test's output. positions run 0..1 across it:
+// `ticks` are (pos, label) marks with the label sitting on top of the tick,
+// `bands` are (from, to, fill) shaded strips behind the line, `notes` are
+// (pos, body) centered underneath, and `caption` is one centered line at
+// the bottom.
+#let stat-scale(ticks: (), bands: (), notes: (), caption: none, height: 5em) = block(width: 100%, height: height, {
+  let y = 2em
+  for (from, to, fill) in bands {
+    place(top + left, dx: from * 100%, dy: y - 0.4em,
+      rect(width: (to - from) * 100%, height: 0.8em, fill: fill, stroke: none))
+  }
+  place(top + left, dy: y, line(length: 100%, stroke: stat-line))
+  for (pos, label) in ticks {
+    place(top + left, dx: pos * 100%, dy: y - 0.4em, line(angle: 90deg, length: 0.8em, stroke: stat-line))
+    place(bottom + center, dx: (pos - 0.5) * 100%, dy: -(height - y) - 0.5em,
+      align(center, text(size: 0.8em)[#label]))
+  }
+  for (pos, body) in notes {
+    place(top + center, dx: (pos - 0.5) * 100%, dy: y + 0.65em,
+      align(center, text(size: 0.75em, hyphenate: false)[#body]))
+  }
+  if caption != none {
+    // allowed to run a little past the line's ends rather than wrap
+    place(bottom + center, box(width: 130%, align(center, text(size: 0.7em, style: "italic", fill: stat-gray)[#caption])))
+  }
+})
 
-  #v(0.4em)
-  *Scientific Notation:* \
-  $a E b = a times 10^b$ \
-  $a E 3 = a times 1000$ (big) \
-  $a E (-3) = a times 0.001$ (small)
-],
-[
-  #table(
-    columns: (auto, 1fr, auto),
-    stroke: 0.5pt + gray,
-    inset: 5pt,
-    [*Test*], [*Variables*], [*Stat*],
-    [Correlation], [numeric – numeric], [$r$],
-    [Regression], [numeric – multi. numeric], [$R^2$],
-    [ANOVA], [numeric – mult. categorical], [$p$],
-    [T-test], [numeric – 2 pair categorical], [$p$],
-  )
+// test name + what it compares
+#let stat-test(name, vars) = [#text(size: 1.1em)[*#name*] \ #text(size: 0.9em, fill: luma(70))[#vars]]
+// "→ r": what the test on the left gives you
+#let stat-out(sym) = box[#text(size: 1.2em, fill: luma(150))[→] #h(0.25em) #text(size: 1.4em, style: "italic")[#sym]]
+#let stat-head(body) = text(size: 0.65em, weight: "bold", fill: luma(140), tracking: 0.06em, upper(body))
 
-  #v(0.3em)
-  #text(size: 0.85em)[
-    $r$: −1 to 1 (as x↑, y↓ / y↑) \
-    $R^2$: 0 to 1 (share of variance in y explained by x) \
-    $p$: 0 to α (usually 0.05) → reject the null if $p < alpha$
-  ]
-]
+#grid(columns: (1fr, auto), column-gutter: 1.4em,
+  grid(
+    columns: (auto, 3.4em, 1fr),
+    column-gutter: 0.6em,
+    row-gutter: 0.8em,
+    align: (left + horizon, left + horizon, left + horizon),
+    stat-head[test & use case], stat-head[output], stat-head[how to read it],
+
+    stat-test("Correlation", [numeric – numeric \ (Pearson _r_ coefficient)]),
+    stat-out[r],
+    stat-scale(
+      ticks: ((0, [−1]), (0.5, [0]), (1, [1])),
+      bands: ((0, 1, stat-strength),),
+      notes: ((0.25, [as x ↑, y ↓]), (0.75, [as x ↑, y ↑])),
+      caption: [strength = distance from 0; sign = direction],
+    ),
+
+    stat-test("Regression", [numeric – multi. numeric]),
+    stat-out[R#super[2]],
+    stat-scale(
+      ticks: ((0, [0]), (0.7, [0.7]), (1, [1])),
+      bands: ((0, 0.7, stat-green),),
+      notes: ((0.7, [↑ \ 70% of the variance in y \ is explained by the x's]),),
+      height: 5.6em,
+    ),
+
+    // ANOVA and T-test both give a p-value; the bracket groups them
+    grid(columns: (auto, 0.5em), column-gutter: 0.6em,
+      stroke: (x, y) => if x == 1 { (right: 1pt + luma(150), top: 1pt + luma(150), bottom: 1pt + luma(150)) },
+      [
+        #stat-test("ANOVA", [numeric – mult. categorical])
+        #v(1em)
+        #stat-test("T-test", [numeric – 2 pair categorical])
+      ],
+      [],
+    ),
+    stat-out[p],
+    stat-scale(
+      ticks: (
+        (0, [0]),
+        (0.5, [#text(size: 0.8em, fill: stat-gray)[usually 0.05] \ #text(size: 1.4em)[*α*]]),
+        (1, [1]),
+      ),
+      bands: ((0, 0.5, stat-green),),
+      notes: (
+        (0.25, [reject the null \ *significant*]),
+        (0.75, [fail to reject the null \ *not significant*]),
+      ),
+      caption: [p works like a percentage:\ 0.05 = 5% to see this or more extreme],
+      height: 6.4em,
+    ),
+  ),
+  // side notes
+  block(width: 10em, height: 20em, stroke: (left: 0.5pt + luma(160)), inset: (left: 1em, y: 0.3em), text(size: 0.85em)[
+    *Null Hypothesis* \
+    H#sub[0]: No x's are significant
+    #v(0.8em)
+    *Alt Hypothesis* \
+    H#sub[A]: At least one x is significant
+    #v(1fr)
+    *Scientific Notation* \
+    aE#strong[b] = a × 10#super[#strong[b]] \
+    #v(0.3em)
+    aE#strong[3] = a × 1000 (big) \
+    aE#strong[−3] = a × 0.001 (small)
+  ]),
 )
 ]
 
@@ -1006,17 +1100,48 @@ End Function
 - Watch your sort/ordering — Tableau doesn't always order the way you expect
 
 == Solver <solver>
+#hide-slide-number()
+#slide-text(0.9em)[
+// no slide number here, so the content can run into the bottom margin
+#pad(bottom: -36pt)[
 
 *Two important Excel formulas:*
+#v(0.4em)
 
-```
-=SUM(A1:A5)                  → A1 + A2 + A3 + A4 + A5
-=SUMPRODUCT(A1:A5, B11:B15)  → A1*B11 + A2*B12 + ... + A5*B15
-                                (the two ranges should be the same size and shape)
-```
+#grid(
+  columns: (auto, auto, auto),
+  column-gutter: 1.2em,
+  row-gutter: 0.5em,
+  align: left + horizon,
+  [=sum(A1:A5)], [→], [A1 + A2 + A3 + A4 + A5],
+  grid.cell(colspan: 3)[#v(0.6em)],
+  [=sumproduct(A1:A5, B11:B15)], [→], [A1\*B11 + A2\*B12 + … + A5\*B15],
+  grid.cell(colspan: 3, inset: (left: 1.5em))[#text(style: "italic", fill: luma(80))[the two ranges should be the same size and shape]],
+)
 
-- *Constraints:* set a changing-cell reference, an operator (`<=`, `=`, `>=`), and the constraint value
-- *If integer constraints aren't working:* Solver → Options → uncheck "Ignore Integer Constraints" and set Integer Optimality to 1%
+#v(1fr)
+
+// each screenshot sits right after its own label (not in a shared column),
+// like the original
+#grid(
+  columns: (auto, auto),
+  column-gutter: 1.2em,
+  align: left + horizon,
+  [*Constraints:*],
+  crop-img("assets/img/solver_add_constraint.png", (642, 256), 52, 38, 534, 173, width: 11cm, radius: 5pt),
+)
+
+#v(1fr)
+
+#grid(
+  columns: (auto, auto),
+  column-gutter: 1.2em,
+  align: left + horizon,
+  [*If integer isn't working:* \ Solver > Options > uncheck this box:],
+  crop-img("assets/img/solver_fix_integers.png", (697, 130), 88, 4, 478, 125, width: 12.2cm),
+)
+]
+]
 
 == HTML: Setup <html>
 #slide-text(1em)[
