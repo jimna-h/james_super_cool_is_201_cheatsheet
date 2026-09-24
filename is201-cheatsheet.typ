@@ -16,12 +16,12 @@
   aspect-ratio: "16-9",
   header: none,
   footer-right: context {
-    // hide the slide number on a topic's primary (title) page, so corner
-    // content (like an acronym or note) can sit in the true corner —
-    // matching the original slides, which don't number those pages either.
+    // hide the slide number on pages with a corner acronym, so the acronym
+    // can sit in the true corner — matching the original slides, which
+    // don't number those pages either.
     let pg = here().page()
-    let starts-here = query(heading).any(h => h.location().page() == pg)
-    if not starts-here {
+    let has-acronym = query(<corner-acronym>).any(m => m.location().page() == pg)
+    if not has-acronym {
       utils.slide-counter.display() + " / " + utils.last-slide-number
     }
   },
@@ -37,6 +37,15 @@
 #set text(font: "Arial")
 #show raw: set text(size: 0.8em)
 #show link: it => underline(text(fill: rgb("#3d6b78"))[#it])
+
+// Per-slide text scale. Wrap a slide's body in this rather than using a bare
+// top-level `#set text(size: ...)`, which would leak into every later slide
+// (and `em` sizes would compound).
+#let slide-text(size, body) = {
+  set text(size: size)
+  set par(spacing: 0.3em)
+  body
+}
 
 // VBA styling, applied to every ```vb block in the deck: real VBA editors
 // (and the original slides) show comments in green and keywords in navy,
@@ -83,12 +92,19 @@
 
 #show raw.where(lang: "vb"): it => {
   set text(font: "Courier New")
+  // tighter than the default 0.65em, matching the original's line spacing
+  set par(leading: 0.5em)
   let lines = it.text.split("\n")
   for (i, line) in lines.enumerate() {
     vba-line(line)
     if i < lines.len() - 1 { linebreak() }
   }
 }
+// Lets a VBA slide's code run into the page's side/bottom margins (and, with
+// a negative `top`, up beside the slide title) so it can fill the slide the
+// way the original's code does.
+#let vba-fill(top: 0pt, body) = pad(top: top, bottom: -36pt, x: -30pt, body)
+
 // ---------- helpers ----------
 
 // small entity-relationship table, e.g.
@@ -125,7 +141,8 @@
 // for HTML, where "HyperText" is one word but contributes two acronym letters.
 // Uses an absolute size (not em) so it stays visually consistent regardless
 // of what ambient text size a slide's content happens to leave behind.
-#let corner-acronym(..words) = place(bottom + right)[
+// (the metadata marker tells the footer to hide this page's slide number)
+#let corner-acronym(..words) = [#metadata(none) <corner-acronym>] + place(bottom + right)[
   #text(size: 27pt)[
     #words.pos().map(w => {
       let parts = if type(w) == array { w } else { (w,) }
@@ -430,9 +447,8 @@
 #corner-acronym("Entity", "Relationship", "Diagram")
 
 == ERD: Cardinality
+#slide-text(0.78em)[
 
-#set text(size: 0.78em)
-#set par(spacing: 0.3em)
 #grid(columns: (auto, 1fr), column-gutter: 1.2em, align: (left + top, left + top),
   [
     #erd-pair(
@@ -481,8 +497,10 @@
     #text(style: "italic", size: 0.7em)[Note! M:N cardinality requires a composite table (next slide)]
   ],
 )
+]
 
 == ERD: Composite Table
+#slide-text(0.78em)[
 
 #let mw = 7.6cm
 #let cw = 6.6cm
@@ -536,8 +554,10 @@ To know how much money Tom Hanks got #box(fill: erd-highlight-fill, inset: 2pt, 
 you need to know both the #hl(color: rgb("#c2d6f4"))[movie] and the #hl(color: rgb("#f4c2c2"))[actor]. His pay is probably different than when he was Woody in
 _Toy Story 2_, or when he was Forrest Gump in _Forrest Gump_
 ]]]
+]
 
 == ERD: Minimum / Maximum Cardinality
+#slide-text(0.75em)[
 
 #align(center)[#text(size: 1.05em)[
 The #hl(color: rgb("#f4c2c2"))[inner marks are minimum] (0 or 1) \
@@ -581,8 +601,10 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
 #align(center)[#text(style: "italic", size: 1em)[
   Think: a student could have #hl(color: rgb("#f4c2c2"))[0 cars], but they could also have #hl(color: rgb("#b7e4b7"))[multiple].
 ]]
+]
 
 == SQL <sql>
+#slide-text(0.75em)[
 
 // styling matches the original slide: pink clause keywords, purple aggregate
 // functions, gray comments — here aligned into a straight column (rather
@@ -624,15 +646,16 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
 ]
 
 #corner-acronym("Structured", "Query", "Language")
+]
 
 == SQL: Where Use Cases
+#slide-text(0.858em)[
 
 // filter terms (=, !=, IS, LIKE, IN, ...) rendered noticeably bigger than
 // the surrounding text, like the original. The left/right columns are a
 // single grid so every note lines up in a straight column — except the
 // != / <> pair (and the wildcard/IN follow-up notes), which use a small
 // row-gutter to stay visually grouped, matching the original.
-#set text(size: 1.1em)
 #let wc-term(body) = text(size: 1.2em, weight: "bold")[#body]
 #let wc-big-gap = 2.1em
 #let wc-small-gap = 0.2em
@@ -653,10 +676,11 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
   [], [→ Exact match for #underline[any] of these],
 )
 ]
+]
 
 == Flow Charts <flowcharts>
+#slide-text(0.4em)[
 
-#set text(size: 0.52em)
 #place(top + left, text(size: 0.85em)[go to \ #link("https://draw.io")[draw.io]])
 #place(bottom + left, text(size: 0.85em)[file \> export as \> pdf])
 #grid(columns: (1fr, 1fr), column-gutter: 1.2em, inset: (left: 0.7em, right: 0.7em),
@@ -708,34 +732,49 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
   ]
 ]
 )
+]
 
 == VBA: Basics <vba>
+#slide-text(0.83em)[
 
 #corner-acronym("Visual", "Basic for", "Applications")
 
+#vba-fill()[
 ```vb
 Option Explicit 'This makes it so that you can only use variables you've declared (VERY RECOMMENDED)
+
 Sub thisIsMySubName()
+
     'BASICS!
+
         'Generally you will first refer to an object type (like a Sheet)
         'and then tell it what you want to do (like delete or add or copy, etc):
+
             ' Sheets and Worksheets are the same thing
             Sheets("MySheet").Delete
             Sheets.Add.name = "MySheet"
             Worksheets("MySheet").Activate
+
             ' Range and Cells are SIMILAR but different: Range("E7") = Cells(7, 5)
             Range("A1").Activate
             ActiveCell.Value = "Hello"
+
             Range("A1:D3").Copy
             Range("E5").PasteSpecial
+
             ' Columns and Rows are what they sound like
             Columns("B:D").Delete
 ```
+]
+]
 
 == VBA: Navigation and Misc.
+#slide-text(0.84em)[
 
+#vba-fill()[
 ```vb
 'NAVIGATION!
+
     '
     ActiveCell.End (xlDown)
     ActiveCell.End (xlToLeft)
@@ -763,9 +802,13 @@ Sub thisIsMySubName()
     name = "James"
     first_initial = Left(name, 1)
 ```
+]
+]
 
 == VBA: Variables
+#slide-text(0.79em)[
 
+#vba-fill()[
 ```vb
 'DECLARE VARIABLES!
     Dim i As Integer   'a whole number
@@ -798,9 +841,13 @@ Sub thisIsMySubName()
     ' COmbine strings with ampersands (&)-- don't forget spaces
     myOutput = "Hello. My name is " & name & " and this is Disney Channel!"
 ```
+]
+]
 
 == VBA: Conditionals
+#slide-text(0.84em)[
 
+#vba-fill(top: -40pt)[
 ```vb
 'CONDITIONALS!
     ' If Statements
@@ -834,11 +881,16 @@ Sub thisIsMySubName()
             feel = "I'm probably staying out of the pool"
     End Select
 ```
+]
+]
 
 == VBA: Loops
+#slide-text(0.76em)[
 
+#vba-fill(top: -40pt)[
 ```vb
 'LOOPS!
+
     'For Loop
     For i = 0 To 5
         ' your code here
@@ -868,11 +920,17 @@ Sub thisIsMySubName()
         'your code here
     Loop
 
+
+
 End Sub
 ```
+]
+]
 
 == VBA: Functions
+#slide-text(0.97em)[
 
+#vba-fill()[
 ```vb
 Function thisIsMyFunctionName(num As Integer, tf As Boolean) As String
 
@@ -899,8 +957,11 @@ Function thisIsMyFunctionName(num As Integer, tf As Boolean) As String
 
 End Function
 ```
+]
+]
 
 == Statistics <statistics>
+#slide-text(0.85em)[
 
 #grid(columns: (1fr, 1fr), gutter: 1.5em,
 [
@@ -936,6 +997,7 @@ End Function
   ]
 ]
 )
+]
 
 == Tableau <tableau>
 
@@ -957,6 +1019,7 @@ End Function
 - *If integer constraints aren't working:* Solver → Options → uncheck "Ignore Integer Constraints" and set Integer Optimality to 1%
 
 == HTML: Setup <html>
+#slide-text(1em)[
 
 #corner-acronym(("Hyper", "Text"), "Markup", "Language")
 
@@ -976,8 +1039,10 @@ In VS Code, inside a `.html` file, type `!` then Enter to generate:
 ```
 
 #text(size: 0.8em)[startbootstrap.com/themes/portfolio-resume]
+]
 
 == HTML: Tags
+#slide-text(0.7em)[
 
 ```html
 <!-- This is a comment -->
@@ -1000,6 +1065,7 @@ In VS Code, inside a `.html` file, type `!` then Enter to generate:
 ```
 
 #text(style: "italic", size: 0.85em)[The start and end tags act like parentheses: `<tag> stuff </tag>`]
+]
 
 == HTML: Anchors
 
@@ -1123,6 +1189,7 @@ CSS is *cascading* because more recent styling supersedes previous styling — i
 ]
 
 == CSS: Selectors / Properties / Values
+#slide-text(0.75em)[
 
 ```css
 /* Built-in selectors: the tags you use in your HTML (body, h1, p, a, img...) */
@@ -1144,6 +1211,7 @@ body {
 ```
 
 #text(style: "italic", size: 0.85em)[There are A LOT of selectors and properties — Google and AI are your friend for finding exactly what you want!]
+]
 
 #focus-slide(background: black)[
   #text(size: 0.55em)[jimna-h.github.io/james_super_cool_is_201_cheatsheet]
