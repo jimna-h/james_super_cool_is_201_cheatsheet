@@ -38,6 +38,57 @@
 #show raw: set text(size: 0.8em)
 #show link: it => underline(text(fill: rgb("#3d6b78"))[#it])
 
+// VBA styling, applied to every ```vb block in the deck: real VBA editors
+// (and the original slides) show comments in green and keywords in navy,
+// set in Courier New. Typst has no built-in VBA/Basic grammar to
+// syntax-highlight against, so this hand-tokenizes each line instead: find
+// the comment-start apostrophe (skipping ones inside "double-quoted"
+// strings), color everything after it green, and color any bare keyword
+// tokens before it navy.
+#let vba-kw-color = rgb("#000080")
+#let vba-cm-color = rgb("#008000")
+#let vba-keywords = ("Option", "Explicit", "Sub", "End", "Dim", "As", "Set",
+  "True", "False", "If", "Then", "ElseIf", "Else", "Select", "Case", "Is",
+  "To", "For", "Each", "In", "Next", "Do", "While", "Until", "Loop", "Function")
+
+#let vba-join(arr) = if arr.len() == 0 { "" } else { arr.join() }
+
+#let vba-tokenize-code(s) = {
+  let toks = s.matches(regex("[A-Za-z0-9_]+|[^A-Za-z0-9_]+"))
+  if toks.len() == 0 { none } else {
+    toks.map(m => {
+      let t = m.text
+      if t in vba-keywords { text(fill: vba-kw-color)[#t] } else { t }
+    }).join()
+  }
+}
+
+#let vba-line(line) = {
+  let chars = line.clusters()
+  let in-str = false
+  let idx = none
+  for i in range(chars.len()) {
+    let c = chars.at(i)
+    if c == "\"" { in-str = not in-str }
+    else if c == "'" and not in-str { idx = i; break }
+  }
+  if idx == none {
+    vba-tokenize-code(line)
+  } else {
+    let code-part = vba-join(chars.slice(0, idx))
+    let comment-part = vba-join(chars.slice(idx))
+    [#vba-tokenize-code(code-part)#text(fill: vba-cm-color)[#comment-part]]
+  }
+}
+
+#show raw.where(lang: "vb"): it => {
+  set text(font: "Courier New")
+  let lines = it.text.split("\n")
+  for (i, line) in lines.enumerate() {
+    vba-line(line)
+    if i < lines.len() - 1 { linebreak() }
+  }
+}
 // ---------- helpers ----------
 
 // small entity-relationship table, e.g.
@@ -113,17 +164,21 @@
 // one attribute row of an ERD entity box. Left/right borders are always
 // drawn (so consecutive rows form one continuous outer side); `bottom: true`
 // adds the divider under the PK row or the outer border under the last row.
-// The PK/FK-column divider is drawn as part of this SAME grid (not as a
-// separately-computed overlay), so it is always exactly where the grid
-// actually put the column boundary, no matter the row's key/scale/etc.
-#let erow(coord, key, label, width: 6cm, fill: white, name: none, scale: 1.0, key-divider: false, bottom: false, stroke: 0.5pt + gray) = node(
+// The PK/FK-column divider is a `place()`d line spanning the row's FULL
+// height (not a `grid.vline`, which only spans the height of the text next
+// to it, leaving a short dash with gaps between rows) — so it reads as one
+// continuous line down the table, at exactly the same x as the text's
+// column boundary since it uses the same `erd-key-col-w`.
+#let erow(coord, key, label, width: 6cm, fill: white, name: none, scale: 1.0, key-divider: false, bottom: false, stroke: 0.5pt + gray, divider-stroke: 0.6pt + luma(120)) = node(
   coord,
   box(width: width, height: erd-row-h * scale, fill: fill, stroke: (left: stroke, right: stroke, bottom: if bottom { stroke } else { none }))[
+    #if key-divider [
+      #place(top + left, dx: erd-key-col-w * scale, dy: 0pt)[#line(angle: 90deg, length: erd-row-h * scale, stroke: divider-stroke)]
+    ]
     #align(left + horizon)[
       #grid(columns: (erd-key-col-w * scale, 1fr), align: left + horizon,
-        ..(if key-divider { (grid.vline(x: 1, stroke: stroke),) } else { () }),
         pad(left: 4pt * scale)[#text(weight: "bold", size: 11pt * scale)[#key]],
-        text(size: 11pt * scale)[#label],
+        pad(left: 4pt * scale)[#text(size: 11pt * scale)[#label]],
       )
     ]
   ],
@@ -174,46 +229,116 @@
 // symbols and the green band highlights the two OUTER (maximum) symbols,
 // matching the "inner = minimum, outer = maximum" callout above. The zero
 // (circle) symbol is filled with the same "inner" pink.
-#let erd-minmax-line-w = 8.5cm
-#let erd-minmax-inner-w = 0.9cm
-#let erd-minmax-outer-w = 0.7cm
-#let erd-minmax-row-h = 1.8cm
-#let erd-minmax-row-gutter = 1em
+//
+// The marks themselves are hand-drawn (not fletcher's `marks:`/built-in
+// crow's-foot system) at explicit offsets from the pink/green boundary,
+// tuned by pixel-measuring the original slide. fletcher's own mark
+// placement turned out to have an internal, `mark-scale`-independent gap
+// between an edge's node coordinate and where the mark's ink actually
+// starts, which made it unreliable to line up with the bands — drawing the
+// ticks/circle/crow's-foot directly gives exact, predictable control.
+//
+// The pink/green bands and the TABLE A / TABLE B labels are drawn ONCE as
+// full-height blocks (not per-row), so they read as one continuous strip
+// down the whole diagram instead of four separately-broken rectangles.
+#let erd-minmax-outer-w = 1.1cm
+#let erd-minmax-inner-w = 1.1cm
+#let erd-minmax-edge-w = 5.3cm
+#let erd-minmax-line-w = erd-minmax-outer-w * 2 + erd-minmax-inner-w * 2 + erd-minmax-edge-w
+#let erd-minmax-row-h = 2.3cm
+#let erd-minmax-table-w = 0.9cm
 #let erd-minmax-pink = rgb("#f4c2c2")
 #let erd-minmax-green = rgb("#b7e4b7")
 
-// "mandatory one" drawn as two ticks (min=1, max=1), matching the original's
-// double-stick symbol — fletcher's built-in "1" mark is only a single tick.
-#let erd-mandatory-one = (
-  inherit: "crowfoot",
-  zero: false, one: false, many: false,
-  draw: mark => {
-    cetz-draw.line((0, mark.one-width), (0, -mark.one-width))
-    cetz-draw.line((-mark.gap * 1.4, mark.one-width), (-mark.gap * 1.4, -mark.one-width))
-  },
-)
-#let erd-mark(name) = if name == "11" { erd-mandatory-one } else { (inherit: name, zero-fill: erd-minmax-pink) }
+// mark geometry, tuned against the original slide's proportions
+#let erd-minmax-tick-h = 0.6cm
+#let erd-minmax-circle-r = 0.4cm
+#let erd-minmax-splay = 0.5cm
 
-// the bands extend a bit past the row's own height, into the row-gutter
-// below, so that consecutive rows' bands visually form one continuous
-// stripe instead of four separate broken-up rectangles. (The very last
-// row's band just extends a little into blank space, which is harmless.)
-#let erd-minmax-row(left-mark, right-mark, extend: true) = box(width: 100%, height: erd-minmax-row-h)[
-  #let band-h = erd-minmax-row-h + (if extend { erd-minmax-row-gutter } else { 0pt })
-  #place(top + left, dx: 0pt, dy: 0pt)[#box(fill: erd-minmax-green.lighten(35%), width: erd-minmax-outer-w, height: band-h)]
-  #place(top + left, dx: erd-minmax-outer-w, dy: 0pt)[#box(fill: erd-minmax-pink.lighten(35%), width: erd-minmax-inner-w, height: band-h)]
-  #place(top + left, dx: erd-minmax-line-w - erd-minmax-outer-w - erd-minmax-inner-w, dy: 0pt)[#box(fill: erd-minmax-pink.lighten(35%), width: erd-minmax-inner-w, height: band-h)]
-  #place(top + left, dx: erd-minmax-line-w - erd-minmax-outer-w, dy: 0pt)[#box(fill: erd-minmax-green.lighten(35%), width: erd-minmax-outer-w, height: band-h)]
-  #place(top + left, dx: 0pt, dy: erd-minmax-row-h / 2 - 0.5pt)[
-    #diagram(
-      node-stroke: none,
-      spacing: (erd-minmax-line-w, 0pt),
-      node((0, 0), [], width: 0.01pt, height: 0.01pt),
-      node((1, 0), [], width: 0.01pt, height: 0.01pt),
-      edge((0, 0), (1, 0), marks: (erd-mark(left-mark), erd-mark(right-mark)), stroke: 1.2pt + black, mark-scale: 190%),
-    )
-  ]
+// a single vertical tick, centered at local (x, 0)
+#let erd-minmax-tick(x) = place(top + left, dx: x, dy: -erd-minmax-tick-h / 2)[
+  #line(length: erd-minmax-tick-h, angle: 90deg, stroke: 1.2pt + black)
 ]
+
+// a filled "zero" circle, centered at local (x, 0)
+#let erd-minmax-circle(x) = place(top + left, dx: x - erd-minmax-circle-r, dy: -erd-minmax-circle-r)[
+  #box(width: 2 * erd-minmax-circle-r, height: 2 * erd-minmax-circle-r, radius: erd-minmax-circle-r, fill: erd-minmax-pink, stroke: 1.2pt + black)
+]
+
+// a "many" crow's-foot with its point at local (x, 0), splaying toward `dir`
+// (+1 = rightward, -1 = leftward) across the green band
+// each segment is wrapped in its own `place()` so all three overlay at the
+// same origin point — without that, Typst flows successive block elements
+// one after another instead of stacking them, which drew the three
+// "splayed" lines end-to-end into an X shape instead of a fan.
+#let erd-minmax-crowfoot(x, dir) = place(top + left, dx: x, dy: 0pt)[
+  #place(line(end: (dir * erd-minmax-outer-w * 0.9, 0pt), stroke: 1.2pt + black))
+  #place(line(end: (dir * erd-minmax-outer-w * 0.9, erd-minmax-splay), stroke: 1.2pt + black))
+  #place(line(end: (dir * erd-minmax-outer-w * 0.9, -erd-minmax-splay), stroke: 1.2pt + black))
+]
+
+// draws one end's combined min+max symbol. `anchor` is the plain line's end
+// (the pink band's inner edge); `dir` is +1 for a right-hand end (bands
+// extend further +x) or -1 for a left-hand end (bands extend further -x).
+// Single marks (the tick or circle standing alone in one band) sit centered
+// in that band; only the crow's-foot is left spanning from the boundary
+// out toward the green band's outer edge.
+#let erd-minmax-inner-mid = erd-minmax-inner-w * 0.5
+#let erd-minmax-outer-mid = erd-minmax-inner-w + erd-minmax-outer-w * 0.5
+#let erd-minmax-mark(kind, anchor, dir) = {
+  if kind == "1?" {
+    erd-minmax-tick(anchor + dir * erd-minmax-outer-mid)
+    erd-minmax-circle(anchor + dir * erd-minmax-inner-mid)
+  } else if kind == "11" {
+    erd-minmax-tick(anchor + dir * erd-minmax-inner-mid)
+    erd-minmax-tick(anchor + dir * erd-minmax-outer-mid)
+  } else if kind == "n!" {
+    erd-minmax-crowfoot(anchor + dir * erd-minmax-inner-w, dir)
+    erd-minmax-tick(anchor + dir * erd-minmax-inner-mid)
+  } else if kind == "n?" {
+    erd-minmax-crowfoot(anchor + dir * erd-minmax-inner-w, dir)
+    erd-minmax-circle(anchor + dir * erd-minmax-inner-mid)
+  }
+}
+
+// rows: an array of (left-mark, right-mark) pairs, one per row.
+#let erd-minmax-diagram(rows) = {
+  let n = rows.len()
+  let total-h = erd-minmax-row-h * n
+  box(width: erd-minmax-table-w * 2 + erd-minmax-line-w, height: total-h)[
+    #place(top + left, dx: 0pt, dy: 0pt)[
+      #box(width: erd-minmax-table-w, height: total-h)[#align(center + horizon)[#rotate(-90deg, reflow: true)[#text(weight: "bold")[TABLE A]]]]
+    ]
+    #place(top + left, dx: erd-minmax-table-w, dy: 0pt)[#box(fill: erd-minmax-green.lighten(35%), width: erd-minmax-outer-w, height: total-h)]
+    #place(top + left, dx: erd-minmax-table-w + erd-minmax-outer-w, dy: 0pt)[#box(fill: erd-minmax-pink.lighten(35%), width: erd-minmax-inner-w, height: total-h)]
+    #place(top + left, dx: erd-minmax-table-w + erd-minmax-line-w - erd-minmax-inner-w - erd-minmax-outer-w, dy: 0pt)[#box(fill: erd-minmax-pink.lighten(35%), width: erd-minmax-inner-w, height: total-h)]
+    #place(top + left, dx: erd-minmax-table-w + erd-minmax-line-w - erd-minmax-outer-w, dy: 0pt)[#box(fill: erd-minmax-green.lighten(35%), width: erd-minmax-outer-w, height: total-h)]
+    #place(top + left, dx: erd-minmax-table-w + erd-minmax-line-w, dy: 0pt)[
+      #box(width: erd-minmax-table-w, height: total-h)[#align(center + horizon)[#rotate(-90deg, reflow: true)[#text(weight: "bold")[TABLE B]]]]
+    ]
+    #for i in range(1, n) {
+      place(top + left, dx: erd-minmax-table-w, dy: erd-minmax-row-h * i)[
+        #line(length: erd-minmax-line-w, stroke: (paint: gray, thickness: 0.6pt, dash: "dotted"))
+      ]
+    }
+    #for (i, pair) in rows.enumerate() {
+      let (lm, rm) = pair
+      let left-anchor = erd-minmax-table-w + erd-minmax-outer-w + erd-minmax-inner-w
+      let right-anchor = erd-minmax-table-w + erd-minmax-line-w - erd-minmax-outer-w - erd-minmax-inner-w
+      place(top + left, dx: 0pt, dy: erd-minmax-row-h * i + erd-minmax-row-h / 2 - 0.5pt)[
+        #line(start: (erd-minmax-table-w, 0pt), end: (erd-minmax-table-w + erd-minmax-line-w, 0pt), stroke: 1.2pt + black)
+        #erd-minmax-mark(lm, left-anchor, -1)
+        #erd-minmax-mark(rm, right-anchor, 1)
+      ]
+    }
+  ]
+}
+
+// content: an array of content blocks, one per row, each vertically
+// centered within the same row-height slot the diagram uses, so they line
+// up with the diagram's rows without needing a shared grid.
+#let erd-minmax-descs(content) = stack(dir: ttb,
+  ..content.map(c => box(height: erd-minmax-row-h)[#align(horizon)[#c]]))
 
 // ---------- slides ----------
 
@@ -415,47 +540,41 @@ _Toy Story 2_, or when he was Forrest Gump in _Forrest Gump_
 == ERD: Minimum / Maximum Cardinality
 
 #align(center)[#text(size: 1.05em)[
-The #hl(color: rgb("#f4c2c2"))[inner] ones are *minimum* (0 or 1) \
-and the #hl(color: rgb("#b7e4b7"))[outer] ones are *maximum* (1 or many)
+The #hl(color: rgb("#f4c2c2"))[inner marks are minimum] (0 or 1) \
+and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
 ]]
 
 #v(0.8em)
 #grid(
-  columns: (auto, 1fr, auto, 1fr), column-gutter: (0.5em, 0.35em, 1.4em), row-gutter: erd-minmax-row-gutter,
-  align: (center + horizon, center + horizon, center + horizon, left + horizon),
-  grid.cell(rowspan: 4)[#rotate(-90deg, reflow: true)[#text(size: 1.05em, weight: "bold")[TABLE A]]],
-  erd-minmax-row("1?", "11"),
-  grid.cell(rowspan: 4)[#rotate(-90deg, reflow: true)[#text(size: 1.05em, weight: "bold")[TABLE B]]],
-  [
-    #text(size: 1.15em)[
-      A could have #hl(color: rgb("#f4c2c2"))[1 B] or #hl(color: rgb("#b7e4b7"))[1 B] \
-      B could have #hl(color: rgb("#f4c2c2"))[0 A] or #hl(color: rgb("#b7e4b7"))[1 A]
-    ]
-  ],
-
-  erd-minmax-row("n!", "n?"),
-  [
-    #text(size: 1.15em)[
-      A could have #hl(color: rgb("#f4c2c2"))[0 B] or #hl(color: rgb("#b7e4b7"))[many B] \
-      B could have #hl(color: rgb("#f4c2c2"))[1 A] or #hl(color: rgb("#b7e4b7"))[many A]
-    ]
-  ],
-
-  erd-minmax-row("n?", "1?"),
-  [
-    #text(size: 1.15em)[
-      A could have #hl(color: rgb("#f4c2c2"))[0 B] or #hl(color: rgb("#b7e4b7"))[1 B] \
-      B could have #hl(color: rgb("#f4c2c2"))[0 A] or #hl(color: rgb("#b7e4b7"))[many A]
-    ]
-  ],
-
-  erd-minmax-row("11", "n!", extend: false),
-  [
-    #text(size: 1.15em)[
-      A could have #hl(color: rgb("#f4c2c2"))[1 B] or #hl(color: rgb("#b7e4b7"))[many B] \
-      B could have #hl(color: rgb("#f4c2c2"))[1 A] or #hl(color: rgb("#b7e4b7"))[1 A]
-    ]
-  ],
+  columns: (auto, 1fr), column-gutter: 1.4em,
+  align: (left + horizon, left + horizon),
+  erd-minmax-diagram((("1?", "11"), ("n!", "n?"), ("n?", "1?"), ("11", "n!"))),
+  erd-minmax-descs((
+    [
+      #text(size: 1.15em)[
+        A could have #hl(color: rgb("#f4c2c2"))[1 B] or #hl(color: rgb("#b7e4b7"))[1 B] \
+        B could have #hl(color: rgb("#f4c2c2"))[0 A] or #hl(color: rgb("#b7e4b7"))[1 A]
+      ]
+    ],
+    [
+      #text(size: 1.15em)[
+        A could have #hl(color: rgb("#f4c2c2"))[0 B] or #hl(color: rgb("#b7e4b7"))[many B] \
+        B could have #hl(color: rgb("#f4c2c2"))[1 A] or #hl(color: rgb("#b7e4b7"))[many A]
+      ]
+    ],
+    [
+      #text(size: 1.15em)[
+        A could have #hl(color: rgb("#f4c2c2"))[0 B] or #hl(color: rgb("#b7e4b7"))[1 B] \
+        B could have #hl(color: rgb("#f4c2c2"))[0 A] or #hl(color: rgb("#b7e4b7"))[many A]
+      ]
+    ],
+    [
+      #text(size: 1.15em)[
+        A could have #hl(color: rgb("#f4c2c2"))[1 B] or #hl(color: rgb("#b7e4b7"))[many B] \
+        B could have #hl(color: rgb("#f4c2c2"))[1 A] or #hl(color: rgb("#b7e4b7"))[1 A]
+      ]
+    ],
+  )),
 )
 
 #v(0.5em)
@@ -538,7 +657,7 @@ and the #hl(color: rgb("#b7e4b7"))[outer] ones are *maximum* (1 or many)
 == Flow Charts <flowcharts>
 
 #set text(size: 0.52em)
-#place(top + left, text(size: 0.85em)[go to \ draw.io])
+#place(top + left, text(size: 0.85em)[go to \ #link("https://draw.io")[draw.io]])
 #place(bottom + left, text(size: 0.85em)[file \> export as \> pdf])
 #grid(columns: (1fr, 1fr), column-gutter: 1.2em, inset: (left: 0.7em, right: 0.7em),
   align: (center, center),
@@ -561,30 +680,30 @@ and the #hl(color: rgb("#b7e4b7"))[outer] ones are *maximum* (1 or many)
 ],
 [
   #text(size: 1.05em, weight: "bold")[EXAMPLE: How to solve 1+1]
-  #v(0.4em)
-  #scale(x: 80%, y: 80%, reflow: true)[
+  #v(1.4em)
+  #scale(x: 65%, y: 65%, reflow: true)[
     #diagram(
       node-stroke: 0.7pt,
       edge-stroke: 0.7pt,
-      spacing: (1.9cm, 1.3cm),
-      node((1,0), [start], shape: fletcher.shapes.ellipse, width: 1.8cm, height: 1.2cm),
+      spacing: (2.7cm, 1.6cm),
+      node((1,0), [start], shape: fletcher.shapes.ellipse, width: 2.1cm, height: 1.4cm),
       edge((1,0), (1,1), "-|>"),
-      node((1,1), [do you have a \ calculator?], shape: fletcher.shapes.diamond, width: 3cm, height: 2.4cm),
+      node((1,1), [do you have a \ calculator?], shape: fletcher.shapes.diamond, width: 3.5cm, height: 2.8cm),
       edge((1,1), (0,1), "-|>", [no], label-side: center),
-      node((0,1), [do 1+1 in \ your head], shape: rect, width: 2.2cm, height: 1.3cm),
+      node((0,1), [do 1+1 in \ your head], shape: rect, width: 2.6cm, height: 1.5cm),
       edge((1,1), (2,1), "-|>", [yes], label-side: center),
-      node((2,1), [enter "1+1=" \ into calculator], shape: fletcher.shapes.parallelogram, width: 3.4cm, height: 1.4cm),
+      node((2,1), [enter "1+1=" \ into calculator], shape: fletcher.shapes.parallelogram, width: 3.9cm, height: 1.6cm),
       edge((2,1), (2,2), "-|>"),
-      node((2,2), [calculator processes \ the math], shape: rect, width: 2.9cm, height: 1.4cm),
+      node((2,2), [calculator processes \ the math], shape: rect, width: 3.4cm, height: 1.6cm),
       edge((2,2), (2,3), "-|>"),
-      node((2,3), [calculator displays \ the result], shape: fletcher.shapes.parallelogram, width: 3.4cm, height: 1.4cm),
+      node((2,3), [calculator displays \ the result], shape: fletcher.shapes.parallelogram, width: 3.9cm, height: 1.6cm),
       edge((0,1), (0,4), "-"),
       edge((0,4), (1,4), "-|>"),
       edge((2,3), (2,4), "-"),
       edge((2,4), (1,4), "-|>"),
-      node((1,4), [], shape: fletcher.shapes.circle, width: 0.6cm),
+      node((1,4), [], shape: fletcher.shapes.circle, width: 0.7cm),
       edge((1,4), (1,5), "-|>"),
-      node((1,5), [end], shape: fletcher.shapes.ellipse, width: 1.8cm, height: 1.2cm),
+      node((1,5), [end], shape: fletcher.shapes.ellipse, width: 2.1cm, height: 1.4cm),
     )
   ]
 ]
