@@ -133,6 +133,54 @@
 
 #let hl(body, color: yellow) = box(fill: color.lighten(40%), inset: 2pt, outset: 2pt, radius: 2pt)[#body]
 
+// ---------- dark "VS Code" code blocks (HTML/CSS slides) ----------
+// styled like the original slides' VS Code screenshots: near-black
+// background, Consolas, colors from assets/vscode-dark.tmTheme, and no line
+// numbers or language badge. Pass a fenced block, e.g.
+// #dark-code(```html
+// <p>hi</p>
+// ```)
+// Each source line is its own fixed-height row, so `notes` — a dictionary
+// of (line number as a string, starting at "1") → content — can sit beside
+// exact lines.
+#let code-dark-bg = rgb("#1e1e1e")  // VS Code's default dark editor gray
+#let code-note-red = rgb("#ff6e61")  // light enough to read on the dark blocks
+#let dark-code(code, size: 0.7em, pitch: 1.3em, notes: (:), width: auto) = no-codly(block(
+  fill: code-dark-bg, width: width, inset: (x: 0.9em, y: 0.8em), breakable: false, {
+    set text(size: size, fill: rgb("#d4d4d4"))
+    set raw(theme: "assets/vscode-dark.tmTheme")
+    // 1.5625em = 1.25 × 1.25 cancels both the global `show raw` 0.8em and
+    // Typst's built-in 0.8em for raw text (show-set sizes compound), so
+    // `size` is the code's actual size
+    show raw: set text(font: ("Consolas", "Courier New"), size: 1.5625em)
+    set par(leading: 0pt)
+    // the whole block is highlighted at once (keeping multi-line syntax
+    // context, e.g. CSS properties inside braces), but every line gets the
+    // same fixed-height row, and a note is placed just past its line's end
+    show raw.line: it => box(height: pitch, align(horizon, {
+      it.body
+      let note = notes.at(str(it.number), default: none)
+      if note != none {
+        context place(horizon + left, dx: measure(it.body).width + 1.2em,
+          block({ set par(leading: 0.35em); text(font: "Arial", size: 0.95em, fill: code-note-red, note) }))
+      }
+    }))
+    raw(code.text, lang: code.lang, block: true)
+  }))
+
+// a red curved arrow for code-block notes: leaves its start heading right,
+// swings out by `reach`, and comes back in to (dx, dy), pointing left
+#let red-arrow(dx, dy, reach: 3cm) = {
+  let s = 1.4pt + code-note-red
+  let y0 = 0pt  // notes are centered on their row, so this starts mid-row
+  place(top + left, curve(stroke: s,
+    curve.move((0pt, y0)),
+    curve.cubic((reach * 0.9, y0), (reach * 1.1, y0 + dy), (dx + 8pt, y0 + dy)),
+  ))
+  place(top + left, dx: dx, dy: y0 + dy, polygon(fill: code-note-red, stroke: none,
+    (0pt, 0pt), (9pt, -4.5pt), (9pt, 4.5pt)))
+}
+
 // shows only the (x, y, w, h) pixel region of an image that is `size` =
 // (width, height) pixels, scaled so that region comes out `width` wide —
 // crops without touching the source file, e.g.
@@ -1150,13 +1198,14 @@ End Function
 ]
 
 == HTML: Setup <html>
-#slide-text(1em)[
+#slide-text(0.9em)[
 
 #corner-acronym(("Hyper", "Text"), "Markup", "Language")
 
-In VS Code, inside a `.html` file, type `!` then Enter to generate:
+In an html file inside VS Code, \ type an exclamation point and enter to automatically generate:
 
-```html
+#v(0.8em)
+#dark-code(size: 0.62em, ```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1165,92 +1214,140 @@ In VS Code, inside a `.html` file, type `!` then Enter to generate:
     <title>Document</title>
 </head>
 <body>
+
 </body>
 </html>
-```
-
-#text(size: 0.8em)[startbootstrap.com/themes/portfolio-resume]
+```)
+#v(0.22em)
+Go here for free bootstrap themes:\
+#link("https://startbootstrap.com/themes/portfolio-resume")[startbootstrap.com/themes/portfolio-resume]
 ]
 
 == HTML: Tags
-#slide-text(0.7em)[
+#slide-text(0.9em)[
 
-```html
+// two equal-width examples side by side across the top (together they
+// line up with the pattern box's edges), then the general pattern below
+#v(0.3em)
+#grid(columns: (1fr, 1fr), column-gutter: 1.2em, align: top,
+  dark-code(size: 0.64em, width: 100%, ```html
 <!-- This is a comment -->
 <h1>Main heading</h1>
 <h2>Section heading</h2>
 <h3>Subsection</h3>
+
 <p>This is a paragraph.</p>
-<!-- Line break -->
+
+<!-- Line Break -->
 <br>
-<!-- Unordered list (bullets) -->
+```),
+  dark-code(size: 0.64em, width: 100%, ```html
+<!-- Unordered List (Bullets) -->
 <ul>
     <li>Item 1</li>
     <li>Item 2</li>
+    <li>Item 3</li>
 </ul>
-<!-- Ordered list (numbers) -->
-<ol>
-    <li>Item 1</li>
-    <li>Item 2</li>
-</ol>
-```
 
-#text(style: "italic", size: 0.85em)[The start and end tags act like parentheses: `<tag> stuff </tag>`]
+<!-- Change <ul> to <ol>
+for an ordered list (Numbers) -->
+```),
+)
+
+#v(1fr)
+
+// the general pattern every tag above follows
+#let tg(body) = text(font: "Consolas", fill: rgb("#2e7d45"), weight: "bold", body)
+#let lbl(body) = text(size: 0.85em, fill: luma(100), body)
+#block(width: 100%, fill: luma(244), stroke: (left: 2.5pt + rgb("#7cc98e")), inset: (x: 1em, y: 0.8em), text(size: 0.85em)[
+  #grid(columns: (auto, 1fr), column-gutter: 2.5em, align: horizon,
+    [
+      *Every tag follows this pattern:*
+      #v(0.2em)
+      #grid(columns: (auto, auto), column-gutter: 1.4em, row-gutter: 0.5em, align: left + horizon,
+        tg[\<tag\>], lbl[← start tag],
+        pad(left: 1.2em, text(font: "Consolas")[stuff]), lbl[← what the tag applies to],
+        tg[\</tag\>], lbl[← end tag: same name, plus a /],
+      )
+    ],
+    [
+      _The start and end tags act like parentheses._
+      #v(0.4em)
+      #lbl[(a few, like #text(font: "Consolas")[\<br\>], have no end tag)]
+    ],
+  )
+])
+
+#v(1fr)
 ]
 
 == HTML: Anchors
+#slide-text(0.9em)[
 
-```html
+#v(1fr)
+#dark-code(width: 100%, size: 0.68em, pitch: 1.5em, notes: (
+  "7": [← #text(font: "Consolas")[../] goes up one folder],
+  "11": [← #text(font: "Consolas")[\#] + the id jumps to it on the same page],
+), ```html
 <!-- Hyperlinks -->
 <a href="https://www.google.com">Visit Google</a>
-<!-- Folder references -->
+
+<!-- Folder References -->
 <a href="otherpage.html">Visit Other Page</a>
 <a href="subfolder/page.html">Visit Subfolder Page</a>
-<a href="../yetanotherpage.html">Visit yet another page</a>
-<!-- On-page anchors (any tag can have an id, not just <a>) -->
-<a id="section1">Section 1</a>
-<a href="#section1">Go to Section 1</a>
-```
+<a href="../anotherpage.html">Visit Another Page</a>
 
-#text(style: "italic", size: 0.85em)[`../` means go to the parent folder (or _root directory_)]
+<!-- On-page Anchors -->
+<h1 id="top">This is the main heading</h2>
+<a href="#contact">Jump to Contact Us</a>
+```)
+#v(1fr)
+]
 
 == HTML: Images
+#slide-text(0.9em)[
 
-```html
+#v(1fr)
+#dark-code(width: 100%, size: 0.7em, ```html
 <!-- Images -->
 <img src="images/bird.jpg" alt="A bird wearing a bagel.">
-<img src="https://example.com/bird-online.jpg" alt="That same bird, but online.">
-```
 
-#text(style: "italic", size: 0.85em)[Notice: images do NOT have an end tag `</img>` (neither do line breaks `</br>`)]
+<img src="https://example.com/bird-online.jpg"
+    alt="That same bird, but online.">
+```)
+#v(1em)
+#align(center)[
+  Notice: images do NOT have an end tag \</img\> \
+  #text(size: 0.8em, style: "italic")[(neither do line breaks \</br\>)]
+]
+#v(2fr)
+]
 
 == HTML: Divisions
+#slide-text(0.9em)[
 
-#text(size: 0.95em)[Divs don't inherently do anything — they're invisible boxes you put content into so you can isolate it for positioning and CSS styling using classes.]
-
-#v(0.3em)
-#grid(columns: (1fr, 1fr), gutter: 1em,
-[
-  #text(size: 0.8em)[*HTML*]
-  ```html
-  <div class="square-image">
-      <img src="assets/doctor-who-tardis.jpg" alt="TARDIS">
-  </div>
-  ```
-],
-[
-  #text(size: 0.8em)[*CSS*]
-  ```css
-  .square-image {
-      width: 200px;
-      height: 200px;
-  }
-  ```
-]
-)
+*Divs* don't inherently do anything: they're invisible boxes you put content into so that you can isolate it for positioning and CSS styling using classes.
 
 #v(0.2em)
-#text(size: 0.85em)[For more, see: *CSS: Selectors/Properties/Values*]
+HTML:
+#dark-code(size: 0.62em, ```html
+<div class="square-image">
+    <img src="assets/doctor-who-tardis.jpg" alt="TARDIS">
+</div>
+```)
+
+#v(0.2em)
+CSS:
+#grid(columns: (auto, 1fr), column-gutter: 2em, align: bottom,
+  dark-code(size: 0.62em, ```css
+.square-image {
+    width: 200px;
+    height: 200px;
+}
+```),
+  [For more, see: \ #link(<css-selectors>)[*CSS: Selectors/Properties/Values*]],
+)
+]
 
 == HTML: Embedding
 
@@ -1319,7 +1416,7 @@ selector {
 CSS is *cascading* because more recent styling supersedes previous styling — if you set the font color to blue, then later set it to red, it will be red.
 ]
 
-== CSS: Selectors / Properties / Values
+== CSS: Selectors / Properties / Values <css-selectors>
 #slide-text(0.75em)[
 
 ```css

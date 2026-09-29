@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Dark code-block colors sampled from the original slides' VS Code
+     screenshots (green tag names, light-blue attributes/strings, gray
+     brackets/comments, gold CSS braces). Used by `dark-code` in the .typ. -->
+<plist version="1.0">
+<dict>
+  <key>name</key>
+  <string>IS 201 VS Code Dark</string>
+  <key>settings</key>
+  <array>
+    <dict>
+      <key>settings</key>
+      <dict>
+        <key>background</key>
+        <string>#1E1E1E</string>
+        <key>foreground</key>
+        <string>#D4D4D4</string>
+      </dict>
+    </dict>
+    <dict>
+      <key>name</key>
+      <string>Comment</string>
+      <key>scope</key>
+      <string>comment, punctuation.definition.comment</string>
+      <key>settings</key>
+      <dict>
+        <key>foreground</key>
+        <string>#8A918D</string>
+      </dict>
+    </dict>
+    <dict>
+      <key>name</key>
+      <string>Tag brackets</string>
+      <key>scope</key>
+      <string>punctuation.definition.tag</string>
+      <key>settings</key>
+      <dict>
+        <key>foreground</key>
+        <string>#8A918D</string>
+      </dict>
+    </dict>
+    <dict>
+      <key>name</key>
+      <string>Tag name</string>
+      <key>scope</key>
+      <string>entity.name.tag</string>
+      <key>settings</key>
+      <dict>
+        <key>foreground</key>
+        <string>#7CC98E</string>
+      </dict>
+    </dict>
+    <dict>
+      <key>name</key>
+      <string>Doctype</string>
+      <key>scope</key>
+      <string>meta.tag.sgml.doctype, keyword.declaration.doctype, entity.name.tag.doctype, meta.tag.sgml</string>
+      <key>settings</key>
+      <dict>
+        <key>foreground</key>
+        <string>#9CC8E4</string>
+      </dict>
+    </dict>
+    <dict>
+      <key>name</key>
+      <string>Attribute name</string>
+      <key>scope</key>
+      <string>entity.other.attribute-name</string>
+      <key>settings</key>
+      <dict>
+        <key>foreground</key>
+        <string>#9CDCFE</string>
+      </dict>
+    </dict>
+    <dict>
+      <key>name</key>
+      <string>String</string>
+      <key>scope</key>
+      <string>string, punctuation.definition.string</string>
+      <key>settings</key>
+      <dict>
+        <key>foreground</key>
+        <string>#A8CFE8</string>
+      </dict>
+    </dict>
+    <dict>
+      <key>name</key>
+      <string>CSS selector</string>
+      <key>scope</key>
+      <string>entity.other.attribute-name.class.css, punctuation.definition.entity.css, meta.selector.css</string>
+      <key>settings</key>
+      <dict>
+        <key>foreground</key>
+        <string>#E0E0E0</string>
+      </dict>
+    </dict>
+    <dict>
+      <key>name</key>
+      <string>CSS property</string>
+      <key>scope</key>
+      <string>support.type.property-name, meta.property-name</string>
+      <key>settings</key>
+      <dict>
+        <key>foreground</key>
+        <string>#9CDCFE</string>
+      </dict>
+    </dict>
+    <dict>
+      <key>name</key>
+      <string>CSS value</string>
+      <key>scope</key>
+      <string>constant.numeric, keyword.other.unit, support.constant, meta.property-value</string>
+      <key>settings</key>
+      <dict>
+        <key>foreground</key>
+        <string>#B5CEA8</string>
+      </dict>
+    </dict>
+    <dict>
+      <key>name</key>
+      <string>CSS braces (bracket-pair colorization)</string>
+      <key>scope</key>
+      <string>punctuation.section.property-list, punctuation.section.block</string>
+      <key>settings</key>
+      <dict>
+        <key>foreground</key>
+        <string>#FFD700</string>
+      </dict>
+    </dict>
+  </array>
+</dict>
+</plist>
