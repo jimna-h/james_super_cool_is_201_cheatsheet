@@ -12,13 +12,10 @@
 #show: codly-init.with()
 #codly(languages: codly-languages, zebra-fill: none, stroke: none)
 
-// safe area: the classroom projector crops the right edge (~6%), so the
-// page is `safe-right` wider than the 16:9 slide the content was designed
-// for, and all of that extra goes into the right margin. The content keeps
-// its exact size and layout; it just sits clear of the cropped edge.
-#let base-w = 841.89pt
+// 16:10 rather than 16:9: the classroom projector cut off the right edge
+// of 16:9 slides
 #let base-h = 473.56pt
-#let safe-right = 42pt
+#let base-w = base-h * 16 / 10
 
 #show: simple-theme.with(
   aspect-ratio: "16-9",
@@ -38,8 +35,8 @@
     align(center)[#text(1em, weight: "bold")[#underline(utils.display-current-heading(level: 2))]],
   ),
   config-page(
-    width: base-w + safe-right, height: base-h,
-    margin: (top: 25pt, bottom: 50pt, left: 50pt, right: 50pt + safe-right),
+    width: base-w, height: base-h,
+    margin: (top: 25pt, bottom: 50pt, x: 32pt),
   ),
 )
 
@@ -113,7 +110,7 @@
 // Lets a VBA slide's code run into the page's side/bottom margins (and, with
 // a negative `top`, up beside the slide title) so it can fill the slide the
 // way the original's code does.
-#let vba-fill(top: 0pt, body) = pad(top: top, bottom: -36pt, x: -30pt, body)
+#let vba-fill(top: 0pt, body) = pad(top: top, bottom: -36pt, x: -20pt, body)
 
 // ---------- helpers ----------
 
@@ -450,10 +447,10 @@
       #box(fill: white, inset: 3pt)[#text(size: 1.4em, weight: "bold")[James' Super Cool \ IS 201 Cheat Sheet]]
     ]
 
-    #place(bottom + right, dx: 50pt, dy: 50pt)[#square(stroke:white, fill:white, width: 6cm)]
+    #place(bottom + right, dx: 32pt, dy: 50pt)[#square(stroke:white, fill:white, width: 6cm)]
 
 
-    #place(bottom + right, dx: 50pt, dy: 50pt)[
+    #place(bottom + right, dx: 32pt, dy: 50pt)[
       #qrcode("https://jimna-h.github.io/james_super_cool_is_201_cheatsheet/is201-cheatsheet.pdf", width: 6cm, quiet-zone: true)
     ]
   ]
@@ -583,11 +580,11 @@
 == ERD: Composite Table
 #slide-text(0.78em)[
 
-#let mw = 7.6cm
-#let cw = 6.6cm
-#let aw = 7.6cm
-#let gap = 2.8cm
-#let es = 1.22
+#let mw = 6.4cm
+#let cw = 5.6cm
+#let aw = 6.4cm
+#let gap = 2.2cm
+#let es = 1.08
 #align(center)[#box[
   #diagram(
     node-stroke: none,
@@ -734,7 +731,7 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
 ]
 
 == SQL: Where Use Cases
-#slide-text(0.858em)[
+#slide-text(0.8em)[
 
 // filter terms (=, !=, IS, LIKE, IN, ...) rendered noticeably bigger than
 // the surrounding text, like the original. The left/right columns are a
@@ -745,7 +742,7 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
 #let wc-big-gap = 2.1em
 #let wc-small-gap = 0.2em
 
-#pad(left: -1em)[
+#pad(left: -0.3em)[
 #grid(
   columns: (auto, 1fr),
   column-gutter: 0.9em,
@@ -823,7 +820,7 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
 ]
 
 == VBA: Basics <vba>
-#slide-text(0.83em)[
+#slide-text(0.76em)[
 
 #corner-acronym("Visual", "Basic for", "Applications")
 
@@ -857,7 +854,7 @@ Sub thisIsMySubName()
 ]
 
 == VBA: Navigation and Misc.
-#slide-text(0.84em)[
+#slide-text(0.8em)[
 
 #vba-fill()[
 ```vb
@@ -894,7 +891,7 @@ Sub thisIsMySubName()
 ]
 
 == VBA: Variables
-#slide-text(0.79em)[
+#slide-text(0.74em)[
 
 #vba-fill()[
 ```vb
@@ -933,7 +930,7 @@ Sub thisIsMySubName()
 ]
 
 == VBA: Conditionals
-#slide-text(0.84em)[
+#slide-text(0.79em)[
 
 #vba-fill(top: -40pt)[
 ```vb
@@ -973,7 +970,7 @@ Sub thisIsMySubName()
 ]
 
 == VBA: Loops
-#slide-text(0.76em)[
+#slide-text(0.72em)[
 
 #vba-fill(top: -40pt)[
 ```vb
@@ -1016,7 +1013,7 @@ End Sub
 ]
 
 == VBA: Functions
-#slide-text(0.97em)[
+#slide-text(0.93em)[
 
 #vba-fill()[
 ```vb
@@ -1166,7 +1163,7 @@ End Function
 
 == Solver <solver>
 #hide-slide-number()
-#slide-text(0.9em)[
+#slide-text(0.85em)[
 // no slide number here, so the content can run into the bottom margin
 #pad(bottom: -36pt)[
 
@@ -1175,7 +1172,7 @@ End Function
 
 #grid(
   columns: (auto, auto, auto),
-  column-gutter: 1.2em,
+  column-gutter: 0.8em,
   row-gutter: 0.5em,
   align: left + horizon,
   [=sum(A1:A5)], [→], [A1 + A2 + A3 + A4 + A5],
@@ -1203,7 +1200,7 @@ End Function
   column-gutter: 1.2em,
   align: left + horizon,
   [*If integer isn't working:* \ Solver > Options > uncheck this box:],
-  crop-img("assets/img/solver_fix_integers.png", (697, 130), 88, 4, 478, 125, width: 12.2cm),
+  crop-img("assets/img/solver_fix_integers.png", (697, 130), 88, 4, 478, 125, width: 10.8cm),
 )
 ]
 ]
@@ -1216,7 +1213,7 @@ End Function
 In an html file inside VS Code, \ type an exclamation point and enter to automatically generate:
 
 #v(0.8em)
-#dark-code(size: 0.62em, ```html
+#dark-code(size: 0.56em, ```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1419,7 +1416,7 @@ CSS:
 
 // the example project (VS Code explorer) on the left, the rules on the right
 #grid(columns: (auto, 1fr), column-gutter: 2em, align: top,
-  box(radius: 4pt, clip: true, image("assets/img/folder-expanded.png", width: 6.2cm)),
+  box(radius: 4pt, clip: true, image("assets/img/folder-expanded.png", width: 5.2cm)),
   [
     #fs-section[Use folders!][
       Give each type of file its own folder: #mono[css/], #mono[html/], #mono[js/], and
@@ -1443,7 +1440,7 @@ CSS:
         [Fixes indentation and long lines. \
          Right click → *Format Document* \
          #text(fill: luma(100))[shortcut: #mono[Shift+Alt+F]]],
-        crop-img("assets/img/format-doc.png", (612, 246), 112, 64, 386, 96, width: 7.2cm, radius: 4pt),
+        crop-img("assets/img/format-doc.png", (612, 246), 112, 64, 386, 96, width: 6.4cm, radius: 4pt),
       )
     ]
   ],
@@ -1453,6 +1450,7 @@ CSS:
 == HTML: Uploading to GitHub
 
 + Click *New* to create a repository
++ Check *Add README*
 + Click *Create repository*
 + On the repo page: *Add file → Upload files*
 + Click *Commit changes*
