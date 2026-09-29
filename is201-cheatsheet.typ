@@ -37,6 +37,18 @@
   config-page(
     width: base-w, height: base-h,
     margin: (top: 25pt, bottom: 50pt, x: 32pt),
+    // a small house in the top-right corner of every slide but the first,
+    // linking back to the first slide
+    foreground: context if here().page() > 1 {
+      let c = rgb("#3d6b78")
+      let house = box(width: 14pt, height: 13pt, {
+        place(polygon(fill: c, (0pt, 6.5pt), (7pt, 0pt), (14pt, 6.5pt)))
+        place(dx: 2.5pt, dy: 6pt, rect(width: 9pt, height: 7pt, fill: c))
+        place(dx: 5.5pt, dy: 8.5pt, rect(width: 3pt, height: 4.5pt, fill: white))
+      })
+      place(top + right, dx: -32pt, dy: 8pt,
+        link((page: 1, x: 0pt, y: 0pt), house))
+    },
   ),
 )
 
@@ -49,6 +61,19 @@
 #let card-fill = luma(247)
 // warnings and "don't do this" notes, everywhere in the deck
 #let warn(body) = text(fill: rgb("#c62828"), weight: "bold", body)
+// one color per topic: used for the Index swatches, the corner acronyms'
+// letters, and each section's existing accent rules/headings
+#let topic = (
+  erd: rgb("#5a4fcf"),      // indigo
+  sql: rgb("#d10099"),      // magenta
+  flow: rgb("#e8850c"),     // draw.io orange
+  vba: rgb("#217346"),      // Excel green
+  stats: rgb("#b8860b"),    // dark gold
+  tableau: rgb("#1f77b4"),  // Tableau blue
+  solver: rgb("#8d5524"),   // brown
+  html: rgb("#e34f26"),     // HTML5 red-orange
+  css: rgb("#663399"),      // rebeccapurple, the CSS color
+)
 #show link: it => underline(text(fill: rgb("#3d6b78"))[#it])
 
 // Per-slide text scale. Wrap a slide's body in this rather than using a bare
@@ -116,7 +141,8 @@
 // Lets a VBA slide's code run into the page's side/bottom margins (and, with
 // a negative `top`, up beside the slide title) so it can fill the slide the
 // way the original's code does.
-#let vba-fill(top: 0pt, body) = pad(top: top, bottom: -36pt, x: -20pt, body)
+#let vba-fill(top: 0pt, body) = pad(top: top, bottom: -36pt, x: -20pt,
+  block(stroke: (left: 2pt + topic.vba.lighten(35%)), inset: (left: 0.7em), body))
 
 // ---------- helpers ----------
 
@@ -226,11 +252,11 @@
 
 // (hides the page's slide number so the acronym can sit in the true corner,
 // matching the original slides, which don't number those pages either)
-#let corner-acronym(..words) = hide-slide-number() + place(bottom + right)[
+#let corner-acronym(..words, color: rgb("#3d6b78")) = hide-slide-number() + place(bottom + right)[
   #text(size: 27pt)[
     #words.pos().map(w => {
       let parts = if type(w) == array { w } else { (w,) }
-      parts.map(p => [#strong[#p.first()]#p.slice(1)]).join()
+      parts.map(p => [#text(weight: "bold", fill: color, p.first())#p.slice(1)]).join()
     }).join([ \ ])
   ]
 ]
@@ -248,7 +274,7 @@
 // left, right always; bottom too, since the header is always followed by a
 // divider) — never as a separately-computed overlay — so it is always
 // exactly where this row actually is, no matter the scale or table size.
-#let erow-header(coord, title, width: 6cm, fill: luma(230), scale: 1.0, stroke: 0.5pt + gray) = node(
+#let erow-header(coord, title, width: 6cm, fill: topic.erd.lighten(85%), scale: 1.0, stroke: 0.5pt + gray) = node(
   coord,
   box(width: width, height: erd-header-h * scale, fill: fill, stroke: (top: stroke, bottom: stroke, left: stroke, right: stroke))[
     #align(left + horizon)[
@@ -289,7 +315,7 @@
 
 // a full small entity box: header + PK row + attribute rows, e.g.
 // #erd-box(0, 0, "Store", "StoreID", ("StoreLocation", "SquareFootage"))
-#let erd-box(col, row, title, pk, attrs, width: 3.6cm, header-fill: luma(230), pk-fill: erd-pk-fill, scale: 1.0) = (
+#let erd-box(col, row, title, pk, attrs, width: 3.6cm, header-fill: topic.erd.lighten(85%), pk-fill: erd-pk-fill, scale: 1.0) = (
   erow-header((col, row), title, width: width, fill: header-fill, scale: scale),
   erow((col, row + 1), "PK", underline[#pk], width: width, fill: pk-fill, scale: scale, key-divider: true, bottom: true),
   ..attrs.enumerate().map(((i, a)) => erow(
@@ -467,20 +493,21 @@
 // slide numbers are looked up from each section's label, so they stay
 // right when slides are added or reordered
 #let slide-no(lbl) = context utils.slide-counter.at(lbl).first()
+#let sw(c) = box(width: 0.55em, height: 0.55em, radius: 2pt, fill: c, baseline: -0.05em)
 #table(
   columns: (auto, 1fr),
   stroke: 0.5pt + gray,
   inset: 8pt,
   [Slide], [Topic],
-  slide-no(<erd-pfk>), [#link(<erd-pfk>)[ERDs]],
-  slide-no(<sql>), [#link(<sql>)[SQL]],
-  slide-no(<flowcharts>), [#link(<flowcharts>)[Flow Charts]],
-  slide-no(<vba>), [#link(<vba>)[VBA]],
-  slide-no(<statistics>), [#link(<statistics>)[Statistics]],
-  slide-no(<tableau>), [#link(<tableau>)[Tableau]],
-  slide-no(<solver>), [#link(<solver>)[Solver]],
-  slide-no(<html>), [#link(<html>)[HTML]],
-  slide-no(<css>), [#link(<css>)[CSS]],
+  slide-no(<erd-pfk>), [#sw(topic.erd) #h(0.3em) #link(<erd-pfk>)[ERDs]],
+  slide-no(<sql>), [#sw(topic.sql) #h(0.3em) #link(<sql>)[SQL]],
+  slide-no(<flowcharts>), [#sw(topic.flow) #h(0.3em) #link(<flowcharts>)[Flow Charts]],
+  slide-no(<vba>), [#sw(topic.vba) #h(0.3em) #link(<vba>)[VBA]],
+  slide-no(<statistics>), [#sw(topic.stats) #h(0.3em) #link(<statistics>)[Statistics]],
+  slide-no(<tableau>), [#sw(topic.tableau) #h(0.3em) #link(<tableau>)[Tableau]],
+  slide-no(<solver>), [#sw(topic.solver) #h(0.3em) #link(<solver>)[Solver]],
+  slide-no(<html>), [#sw(topic.html) #h(0.3em) #link(<html>)[HTML]],
+  slide-no(<css>), [#sw(topic.css) #h(0.3em) #link(<css>)[CSS]],
 )
 
 == ERD: Primary / Foreign Keys <erd-pfk>
@@ -531,7 +558,7 @@
 ]
 )
 
-#corner-acronym("Entity", "Relationship", "Diagram")
+#corner-acronym("Entity", "Relationship", "Diagram", color: topic.erd)
 
 == ERD: Cardinality
 #slide-text(0.78em)[
@@ -560,21 +587,21 @@
     #underline[Read #hl(color: rgb("#c2d6f4"))[left-to-right] AND #hl(color: rgb("#f4d9a0"))[right-to-left]]
 
     #v(0.7em)
-    *One to One (1:1)* \
+    #text(weight: "bold", fill: topic.erd)[One to One (1:1)] \
     #pad(left: 1em)[
       #hl(color: rgb("#c2d6f4"))[A store has one manager] #sym.space
       #hl(color: rgb("#f4d9a0"))[A manager works at one store]
     ]
 
     #v(0.7em)
-    *One to Many (1:N)* \
+    #text(weight: "bold", fill: topic.erd)[One to Many (1:N)] \
     #pad(left: 1em)[
       #hl(color: rgb("#c2d6f4"))[A customer can have multiple orders] #sym.space
       #hl(color: rgb("#f4d9a0"))[An order belongs to one customer]
     ]
 
     #v(0.7em)
-    *Many to Many (M:N)* \
+    #text(weight: "bold", fill: topic.erd)[Many to Many (M:N)] \
     #pad(left: 1em)[
       #hl(color: rgb("#c2d6f4"))[A student can enroll in many courses] #sym.space
       #hl(color: rgb("#f4d9a0"))[A course can have lots of students]
@@ -705,7 +732,7 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
 #let sql-comment-size = 1.05em
 #let sql-num-size = 0.8em
 #let sql-num-color = rgb("#8a939c")
-#let sql-kw-color = rgb("#d10099")
+#let sql-kw-color = topic.sql
 #let sql-fn-color = rgb("#390087")
 #let sql-kw(code, color: sql-kw-color) = text(size: sql-code-size, fill: color)[#raw(code)]
 #let sql-cm(comment) = text(size: sql-comment-size, fill: gray)[#raw("-- " + comment)]
@@ -744,12 +771,12 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
   #sql-cm("examples: count(), sum(), avg(), min(), max()")
 ])
 
-#corner-acronym("Structured", "Query", "Language")
+#corner-acronym("Structured", "Query", "Language", color: topic.sql)
 ]
 
 // shared by both WHERE slides: one row per kind of filter, with a pink
 // left rule. Operators are pink + bold (not bigger), so no keyword dominates.
-#let sql-pink = rgb("#d10099")
+#let sql-pink = topic.sql
 #let op(body) = text(weight: "bold", fill: sql-pink, body)
 #let ex(code, note) = [#text(font: "Consolas", size: 0.85em, code) \ #text(size: 0.8em, fill: luma(90))[→ #note]]
 #let type-row(title, rule, cols, gap: 0.8em, pad-y: 0.7em, ..items) = block(width: 100%, fill: card-fill,
@@ -897,68 +924,87 @@ JOIN section ON ta.section_id = section.section_id
 ]
 
 == Flow Charts <flowcharts>
+#hide-slide-number()
 #slide-text(0.4em)[
+// no slide number here, so the cards can run into the bottom margin
+#pad(bottom: -36pt)[
 
-#place(top + left, text(size: 1.3em)[go to #link("https://draw.io")[draw.io]])
-#place(bottom + left, text(size: 1.3em)[file \> export as \> pdf])
-#grid(columns: (1fr, 1fr), column-gutter: 1.2em, inset: (left: 0.7em, right: 0.7em),
-  align: (center, center),
-  stroke: (x, y) => if x == 1 { (left: 0.7pt + black) } else { none },
-[
-  #scale(x: 82%, y: 82%, reflow: true)[
-    #set text(size: 1.45em)
-    #diagram(
-      node-stroke: 0.7pt,
-      spacing: (0.7cm, 0.6cm),
-      node((0,0), [start/end], shape: fletcher.shapes.ellipse, width: 3.4cm, height: 2cm),
-      node((1,0), align(left)[you can only have ONE start \ #v(0.3em) but you CAN have multiple ends], shape: rect, stroke: none, width: 7cm),
-      node((0,1), [process \ (something happens)], shape: rect, width: 5.6cm, height: 2cm),
-      node((0,2), [decision \ (T/F or Y/N)], shape: fletcher.shapes.diamond, width: 3.4cm, height: 2.4cm),
-      node((1,2), align(left)[decisions are the ONLY thing that can have more than one arrow pointing OUT of them], shape: rect, stroke: none, width: 7cm),
-      node((0,3), [input/output \ (info entered \ or displayed)], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 2.3cm),
-      node((0,4), [connector], shape: fletcher.shapes.circle, width: 2.7cm),
-      node((1,4), align(left)[connectors are the ONLY thing that can have more than one arrow pointing INTO them], shape: rect, stroke: none, width: 7cm),
-    )
-  ]
-],
-[
-  #text(size: 1.4em, weight: "bold")[EXAMPLE: How to solve 1+1]
-  #v(1.4em)
-  // nudged right so the "do 1+1" box doesn't graze the center divider
-  #move(dx: 14pt, scale(x: 72%, y: 72%, reflow: true)[
-    #set text(size: 1.5em)
-    #diagram(
-      node-stroke: 0.7pt,
-      edge-stroke: 0.7pt,
-      spacing: (2.2cm, 0.8cm),
-      node((1,0), [start], shape: fletcher.shapes.ellipse, width: 2.6cm, height: 1.6cm),
-      edge((1,0), (1,1), "-|>"),
-      node((1,1), [do you have a \ calculator?], shape: fletcher.shapes.diamond, width: 3.9cm, height: 2.6cm),
-      edge((1,1), (0,1), "-|>", [no], label-side: center),
-      node((0,1), [do 1+1 in \ your head], shape: rect, width: 3.6cm, height: 1.9cm),
-      edge((1,1), (2,1), "-|>", [yes], label-side: center),
-      node((2,1), [enter "1+1=" \ into calculator], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 1.9cm),
-      edge((2,1), (2,2), "-|>"),
-      node((2,2), [calculator processes \ the math], shape: rect, width: 5.6cm, height: 1.9cm),
-      edge((2,2), (2,3), "-|>"),
-      node((2,3), [calculator displays \ the result], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 1.9cm),
-      edge((0,1), (0,4), "-"),
-      edge((0,4), (1,4), "-|>"),
-      edge((2,3), (2,4), "-"),
-      edge((2,4), (1,4), "-|>"),
-      node((1,4), [], shape: fletcher.shapes.circle, width: 0.7cm),
-      edge((1,4), (1,5), "-|>"),
-      node((1,5), [end], shape: fletcher.shapes.ellipse, width: 2.6cm, height: 1.6cm),
-    )
+// each shape type gets its own soft fill, used in both the legend and the
+// example, so students can match every box in the example to its meaning
+#let fc-orange = topic.flow
+#let fc-term = rgb("#d5e8d4")     // start/end: green
+#let fc-proc = rgb("#dae8fc")     // process: blue
+#let fc-dec = rgb("#fff2cc")      // decision: yellow
+#let fc-io = rgb("#e1d5e7")       // input/output: purple
+#let fc-conn = rgb("#e6e6e6")     // connector: gray
+#let rule(body) = text(fill: luma(60), body)
+#let key(body) = text(weight: "bold", fill: fc-orange, body)
+#let fc-card(title, body) = block(width: 100%, height: 12.3cm, fill: card-fill,
+  stroke: (top: 3pt + fc-orange), inset: (x: 1em, y: 0.9em), [
+    #text(size: 1.5em, weight: "bold", fill: fc-orange, title)
+    #v(0.4em)
+    #body
   ])
-]
+
+#grid(columns: (1fr, 1fr), column-gutter: 1.2em,
+  fc-card[The shapes][
+    #align(center, scale(x: 78%, y: 78%, reflow: true)[
+      #set text(size: 1.45em)
+      #diagram(
+        node-stroke: 0.7pt,
+        spacing: (0.7cm, 0.5cm),
+        node((0,0), [start/end], shape: fletcher.shapes.ellipse, width: 3.4cm, height: 2cm, fill: fc-term),
+        node((1,0), align(left, rule[you can only have #key[ONE] start \ #v(0.3em) but you #key[CAN] have multiple ends]), shape: rect, stroke: none, width: 7cm),
+        node((0,1), [process \ (something happens)], shape: rect, width: 5.6cm, height: 2cm, fill: fc-proc),
+        node((0,2), [decision \ (T/F or Y/N)], shape: fletcher.shapes.diamond, width: 3.4cm, height: 2.4cm, fill: fc-dec),
+        node((1,2), align(left, rule[decisions are the #key[ONLY] thing that can have more than one arrow pointing #key[OUT] of them]), shape: rect, stroke: none, width: 7cm),
+        node((0,3), [input/output \ (info entered \ or displayed)], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 2.3cm, fill: fc-io),
+        node((0,4), [connector], shape: fletcher.shapes.circle, width: 2.7cm, fill: fc-conn),
+        node((1,4), align(left, rule[connectors are the #key[ONLY] thing that can have more than one arrow pointing #key[INTO] them]), shape: rect, stroke: none, width: 7cm),
+      )
+    ])
+  ],
+  fc-card[Example: how to solve 1+1][
+    #align(center, scale(x: 64%, y: 64%, reflow: true)[
+      #set text(size: 1.5em)
+      #diagram(
+        node-stroke: 0.7pt,
+        edge-stroke: 0.7pt,
+        spacing: (2.2cm, 0.8cm),
+        node((1,0), [start], shape: fletcher.shapes.ellipse, width: 2.6cm, height: 1.6cm, fill: fc-term),
+        edge((1,0), (1,1), "-|>"),
+        node((1,1), [do you have a \ calculator?], shape: fletcher.shapes.diamond, width: 3.9cm, height: 2.6cm, fill: fc-dec),
+        // both branches leave the diamond sideways, then turn down into
+        // the top of their first shape
+        edge((1,1), (0,1), (0,2), "-|>", [no], label-pos: 0.25, label-side: center, label-fill: card-fill),
+        edge((1,1), (2,1), (2,2), "-|>", [yes], label-pos: 0.25, label-side: center, label-fill: card-fill),
+        node((0,2), [do 1+1 in \ your head], shape: rect, width: 3.6cm, height: 1.9cm, fill: fc-proc),
+        node((2,2), [enter "1+1=" \ into calculator], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 1.9cm, fill: fc-io),
+        edge((2,2), (2,3), "-|>"),
+        node((2,3), [calculator processes \ the math], shape: rect, width: 5.6cm, height: 1.9cm, fill: fc-proc),
+        edge((2,3), (2,4), "-|>"),
+        node((2,4), [calculator displays \ the result], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 1.9cm, fill: fc-io),
+        // both paths come back together at the connector
+        edge((0,2), (0,5), (1,5), "-|>"),
+        edge((2,4), (2,5), (1,5), "-|>"),
+        node((1,5), [], shape: fletcher.shapes.circle, width: 0.7cm, fill: fc-conn),
+        edge((1,5), (1,6), "-|>"),
+        node((1,6), [end], shape: fletcher.shapes.ellipse, width: 2.6cm, height: 1.6cm, fill: fc-term),
+      )
+    ])
+  ],
 )
+#v(0.5em)
+#align(center, text(size: 1.3em)[
+  Make yours at #link("https://draw.io")[draw.io] #h(0.4em) → #h(0.4em) when done: *File → Export as → PDF*
+])
+]
 ]
 
 == VBA: Basics <vba>
 #slide-text(0.76em)[
 
-#corner-acronym("Visual", "Basic for", "Applications")
+#corner-acronym("Visual", "Basic for", "Applications", color: topic.vba)
 
 #vba-fill()[
 ```vb
@@ -1185,7 +1231,7 @@ End Function
 #slide-text(0.7em)[
 
 #let stat-line = 1pt + luma(90)
-#let stat-green = rgb("#b7e4b7")
+#let stat-green = topic.stats.lighten(65%)  // (name kept; now the Statistics gold)
 // correlation strength: same green on both sides, fullest at ±1, white at 0
 #let stat-strength = gradient.linear(stat-green, white, stat-green)
 #let stat-gray = luma(110)
@@ -1218,7 +1264,7 @@ End Function
 })
 
 // test name + what it compares
-#let stat-test(name, vars) = [#text(size: 1.1em)[*#name*] \ #text(size: 0.9em, fill: luma(70))[#vars]]
+#let stat-test(name, vars) = [#text(size: 1.1em)[#text(weight: "bold", fill: topic.stats)[#name]] \ #text(size: 0.9em, fill: luma(70))[#vars]]
 // "→ r": what the test on the left gives you
 #let stat-out(sym) = box[#text(size: 1.2em, fill: luma(150))[→] #h(0.25em) #text(size: 1.4em, style: "italic")[#sym]]
 #let stat-head(body) = text(size: 0.65em, weight: "bold", fill: luma(140), tracking: 0.06em, upper(body))
@@ -1263,27 +1309,27 @@ End Function
     stat-scale(
       ticks: (
         (0, [0]),
-        (0.5, [#text(size: 0.8em, fill: stat-gray)[usually 0.05] \ #text(size: 1.4em)[*α*]]),
+        (0.5, [#text(size: 0.8em, fill: stat-gray)[usually 0.05] \ #text(size: 1.4em)[#text(weight: "bold", fill: topic.stats)[α]]]),
         (1, [1]),
       ),
       bands: ((0, 0.5, stat-green),),
       notes: (
-        (0.25, [reject the null \ *significant*]),
-        (0.75, [fail to reject the null \ *not significant*]),
+        (0.25, [reject the null \ #text(weight: "bold", fill: topic.stats)[significant]]),
+        (0.75, [fail to reject the null \ #text(weight: "bold", fill: topic.stats)[not significant]]),
       ),
       caption: [p works like a percentage:\ 0.05 = 5% to see this or more extreme],
       height: 6.4em,
     ),
   ),
   // side notes
-  block(width: 10em, height: 20em, stroke: (left: 0.5pt + luma(160)), inset: (left: 1em, y: 0.3em), text(size: 0.85em)[
-    *Null Hypothesis* \
+  block(width: 10em, height: 20em, stroke: (left: 1pt + topic.stats), inset: (left: 1em, y: 0.3em), text(size: 0.85em)[
+    #text(weight: "bold", fill: topic.stats)[Null Hypothesis] \
     H#sub[0]: No x's are significant
     #v(0.8em)
-    *Alt Hypothesis* \
+    #text(weight: "bold", fill: topic.stats)[Alt Hypothesis] \
     H#sub[A]: At least one x is significant
     #v(1fr)
-    *Scientific Notation* \
+    #text(weight: "bold", fill: topic.stats)[Scientific Notation] \
     aE#strong[b] = a × 10#super[#strong[b]] \
     #v(0.3em)
     aE#strong[3] = a × 1000 (big) \
@@ -1295,7 +1341,7 @@ End Function
 == Tableau <tableau>
 #slide-text(0.8em)[
 
-#let tab-blue = rgb("#1f5f99")
+#let tab-blue = topic.tableau
 #let tab-icon(x) = box(stroke: 0.5pt + luma(200), radius: 4pt, inset: 3pt,
   crop-img("assets/img/tableau-trick.png", (135, 52), x, 18, 23, 23, width: 1.1cm))
 #let tab-card(title, body) = block(width: 100%, fill: card-fill, breakable: false,
@@ -1323,7 +1369,7 @@ End Function
 // no slide number here, so the content can run into the bottom margin
 #pad(bottom: -36pt)[
 
-*Two important Excel formulas:*
+#text(weight: "bold", fill: topic.solver)[Two important Excel formulas:]
 #v(0.4em)
 
 #grid(
@@ -1345,7 +1391,7 @@ End Function
   columns: (auto, auto),
   column-gutter: 1.2em,
   align: left + horizon,
-  [*Constraints:*],
+  [#text(weight: "bold", fill: topic.solver)[Constraints:]],
   crop-img("assets/img/solver_add_constraint.png", (642, 256), 52, 38, 534, 173, width: 11cm, radius: 5pt),
 )
 
@@ -1355,7 +1401,7 @@ End Function
   columns: (auto, auto),
   column-gutter: 1.2em,
   align: left + horizon,
-  [*If integer isn't working:* \ Solver > Options > uncheck this box:],
+  [#text(weight: "bold", fill: topic.solver)[If integer isn't working:] \ Solver > Options > uncheck this box:],
   crop-img("assets/img/solver_fix_integers.png", (697, 130), 88, 4, 478, 125, width: 10.8cm),
 )
 ]
@@ -1364,7 +1410,7 @@ End Function
 == HTML: Setup <html>
 #slide-text(0.9em)[
 
-#corner-acronym(("Hyper", "Text"), "Markup", "Language")
+#corner-acronym(("Hyper", "Text"), "Markup", "Language", color: topic.html)
 
 In an html file inside VS Code, \ type an exclamation point and enter to automatically generate:
 
@@ -1423,7 +1469,7 @@ for an ordered list (Numbers) -->
 // the general pattern every tag above follows
 #let tg(body) = text(font: "Consolas", fill: rgb("#2e7d45"), weight: "bold", body)
 #let lbl(body) = text(size: 0.85em, fill: luma(100), body)
-#block(width: 100%, fill: card-fill, stroke: (left: 2.5pt + rgb("#7cc98e")), inset: (x: 1em, y: 0.8em), text(size: 0.85em)[
+#block(width: 100%, fill: card-fill, stroke: (left: 2.5pt + topic.html), inset: (x: 1em, y: 0.8em), text(size: 0.85em)[
   #grid(columns: (auto, 1fr), column-gutter: 2.5em, align: horizon,
     [
       *Every tag follows this pattern:*
@@ -1517,7 +1563,7 @@ CSS:
 #slide-text(0.8em)[
 
 #let yt-red = rgb("#cc1f1a")
-#let tab-blue = rgb("#1f5f99")
+#let tab-blue = topic.tableau
 // one numbered step: a number badge, the instruction, and (optionally) a
 // small screenshot of exactly what to click
 #let embed-step(n, color, body, shot: none) = grid(
@@ -1529,7 +1575,7 @@ CSS:
 )
 // a site's card: colored title bar, then its steps
 #let embed-card(title, color, ..steps) = block(width: 100%,
-  fill: card-fill, stroke: (top: 3pt + color), inset: (x: 1em, y: 0.9em), {
+  fill: card-fill, stroke: (top: 3pt + topic.html), inset: (x: 1em, y: 0.9em), {
     text(size: 1.2em, weight: "bold", fill: color, title)
     v(0.3em)
     for s in steps.pos() { s; v(0.55em) }
@@ -1567,8 +1613,8 @@ CSS:
 #let good = rgb("#2e7d45")
 #let bad = rgb("#c62828")
 // a titled section with a colored rule on its left
-#let fs-section(title, body) = block(width: 100%, stroke: (left: 2.5pt + rgb("#3d6b78")),
-  inset: (left: 0.9em, y: 0.2em), [#text(size: 1.15em, weight: "bold", fill: rgb("#3d6b78"), title) \ #body])
+#let fs-section(title, body) = block(width: 100%, stroke: (left: 2.5pt + topic.html),
+  inset: (left: 0.9em, y: 0.2em), [#text(size: 1.15em, weight: "bold", fill: topic.html, title) \ #body])
 
 // the example project (VS Code explorer) on the left, the rules on the right
 #grid(columns: (auto, 1fr), column-gutter: 2em, align: top,
@@ -1609,7 +1655,7 @@ CSS:
 // no slide number here, so the cards can run into the bottom margin
 #pad(bottom: -30pt)[
 
-#let gh-green = rgb("#1f883d")
+#let gh-green = topic.html  // (name kept; HTML section color)
 #let gh-form = "assets/img/repo-creation.png"
 // one numbered step: badge + instruction, with an optional screenshot of
 // exactly what to click, beside the instruction (small buttons) or
@@ -1661,7 +1707,7 @@ CSS:
 == HTML: Going Live <going-live>
 #slide-text(0.72em)[
 
-#let gh-green = rgb("#1f883d")
+#let gh-green = topic.html  // (name kept; HTML section color)
 #let gh-badge(n) = box(width: 1.4em, height: 1.4em, radius: 50%, fill: gh-green,
   align(center + horizon, text(fill: white, weight: "bold", size: 0.8em)[#n]))
 // one step as a card: badge + instruction on top, its screenshot below
@@ -1693,9 +1739,9 @@ CSS:
 == CSS: Basics <css>
 #slide-text(0.8em)[
 
-#corner-acronym("Cascading", "Style", "Sheets")
+#corner-acronym("Cascading", "Style", "Sheets", color: topic.css)
 
-#let css-blue = rgb("#3d6b78")
+#let css-blue = topic.css
 #let mono(body) = text(font: "Consolas", body)
 #let css-head(n, body) = text(size: 1.1em, weight: "bold", fill: css-blue)[#n. #body]
 
@@ -1748,7 +1794,7 @@ p {
 == CSS: Selectors / Properties / Values <css-selectors>
 #slide-text(0.8em)[
 
-#let css-blue = rgb("#3d6b78")
+#let css-blue = topic.css
 #let mono(body) = text(font: "Consolas", body)
 #let sel-card(title, sub, body) = block(width: 100%, height: 9.8cm, fill: card-fill,
   stroke: (top: 3pt + css-blue), inset: (x: 0.9em, y: 0.8em), [
