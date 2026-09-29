@@ -42,7 +42,13 @@
 
 // ---------- global sizing (matches the original slides' larger, readable type) ----------
 #set text(font: "Arial")
-#show raw: set text(size: 0.8em)
+#show raw: set text(font: "Consolas", size: 0.8em)
+
+// ---------- shared style tokens (keep the deck cohesive across sections) ----------
+// light panel behind cards/callouts; each section picks its own accent color
+#let card-fill = luma(247)
+// warnings and "don't do this" notes, everywhere in the deck
+#let warn(body) = text(fill: rgb("#c62828"), weight: "bold", body)
 #show link: it => underline(text(fill: rgb("#3d6b78"))[#it])
 
 // Per-slide text scale. Wrap a slide's body in this rather than using a bare
@@ -458,20 +464,23 @@
 
 == Index
 
+// slide numbers are looked up from each section's label, so they stay
+// right when slides are added or reordered
+#let slide-no(lbl) = context utils.slide-counter.at(lbl).first()
 #table(
   columns: (auto, 1fr),
   stroke: 0.5pt + gray,
   inset: 8pt,
   [Slide], [Topic],
-  [2], [#link(<erd-pfk>)[ERDs]],
-  [6], [#link(<sql>)[SQL]],
-  [8], [#link(<flowcharts>)[Flow Charts]],
-  [9], [#link(<vba>)[VBA]],
-  [15], [#link(<statistics>)[Statistics]],
-  [16], [#link(<tableau>)[Tableau]],
-  [17], [#link(<solver>)[Solver]],
-  [18], [#link(<html>)[HTML]],
-  [27], [#link(<css>)[CSS]],
+  slide-no(<erd-pfk>), [#link(<erd-pfk>)[ERDs]],
+  slide-no(<sql>), [#link(<sql>)[SQL]],
+  slide-no(<flowcharts>), [#link(<flowcharts>)[Flow Charts]],
+  slide-no(<vba>), [#link(<vba>)[VBA]],
+  slide-no(<statistics>), [#link(<statistics>)[Statistics]],
+  slide-no(<tableau>), [#link(<tableau>)[Tableau]],
+  slide-no(<solver>), [#link(<solver>)[Solver]],
+  slide-no(<html>), [#link(<html>)[HTML]],
+  slide-no(<css>), [#link(<css>)[CSS]],
 )
 
 == ERD: Primary / Foreign Keys <erd-pfk>
@@ -681,7 +690,7 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
 ]]
 ]
 
-== SQL <sql>
+== SQL: Clauses <sql>
 #slide-text(0.75em)[
 
 // corner note, same size/spot as Flow Charts' "go to draw.io" (one line so
@@ -730,34 +739,58 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
 #corner-acronym("Structured", "Query", "Language")
 ]
 
-== SQL: Where Use Cases
+// shared by both WHERE slides: one row per kind of filter, with a pink
+// left rule. Operators are pink + bold (not bigger), so no keyword dominates.
+#let sql-pink = rgb("#d10099")
+#let op(body) = text(weight: "bold", fill: sql-pink, body)
+#let ex(code, note) = [#text(font: "Consolas", size: 0.85em, code) \ #text(size: 0.8em, fill: luma(90))[→ #note]]
+#let type-row(title, rule, cols, gap: 0.8em, pad-y: 0.7em, ..items) = block(width: 100%, fill: card-fill,
+  stroke: (left: 3pt + sql-pink), inset: (x: 0.9em, y: pad-y),
+  grid(columns: (6.2em, 1fr), column-gutter: 1em, align: (left + horizon, left + top),
+    [#text(size: 1.2em, weight: "bold", fill: sql-pink, title) \ #text(size: 0.8em, style: "italic", fill: luma(90), rule)],
+    grid(columns: cols, column-gutter: 1.5em, row-gutter: gap, ..items.pos()),
+  ))
+
+== SQL: Where (1/2)
 #slide-text(0.8em)[
 
-// filter terms (=, !=, IS, LIKE, IN, ...) rendered noticeably bigger than
-// the surrounding text, like the original. The left/right columns are a
-// single grid so every note lines up in a straight column — except the
-// != / <> pair (and the wildcard/IN follow-up notes), which use a small
-// row-gutter to stay visually grouped, matching the original.
-#let wc-term(body) = text(size: 1.2em, weight: "bold")[#body]
-#let wc-big-gap = 2.1em
-#let wc-small-gap = 0.2em
+#set smartquote(enabled: false)  // straight quotes, like real SQL
 
-#pad(left: -0.3em)[
-#grid(
-  columns: (auto, 1fr),
-  column-gutter: 0.9em,
-  row-gutter: (wc-big-gap, wc-small-gap, wc-big-gap, wc-big-gap, wc-small-gap, wc-big-gap, wc-small-gap),
-  align: (left + horizon, left + horizon),
-  [ta_name #wc-term[=] "James"], [→ Exact match],
-  [ta_name #wc-term[!=] "James"], [→ Everything but exact match],
-  [ta_name #wc-term[<>] "James"], [#text(style: "italic")[(these are equivalent)]],
-  [ta_name #wc-term[IS] NULL], [→ NULL means blank data \ (can also do #text(fill: black, weight: "bold")[IS NOT] NULL)],
-  [ta_name #wc-term[LIKE] "%ame%"], [→ The text #text(style: "italic")[("ame")] is contained within the attribute],
-  [], [#text(style: "italic")[( \_ = one wildcard,  % = any number of wildcards)]],
-  grid.cell(colspan: 2)[ta_name #wc-term[IN] ("James", "Robert", "Frankie")],
-  [], [→ Exact match for #underline[any] of these],
+#type-row("Text", [in quotes], (1fr, 1fr), gap: 1.5em, pad-y: 1.1em,
+  ex([ta_name #op[=] "James"], [exactly "James"]),
+  ex([ta_name #op[!=] "James" #h(0.6em) ta_name #op[<>] "James"], [anything but "James"]),
+  ex([ta_name #op[LIKE] "%ame%"], [contains "ame"]),
+  text(size: 0.8em, fill: luma(90))[#text(font: "Consolas", size: 1.06em)[%] = any number of characters \ #text(font: "Consolas", size: 1.06em)[\_] = exactly one character],
+  grid.cell(colspan: 2, ex([ta_name #op[IN] ("James", "Robert", "Frankie")], [exact match for #underline[any] of these])),
+)
+#v(1.2em)
+#type-row("Blank", [no quotes], (1fr, 1fr), pad-y: 1.1em,
+  ex([ta_name #op[IS] NULL], [blank / missing (any type)]),
+  ex([ta_name #op[IS NOT] NULL], [has data]),
 )
 ]
+
+== SQL: Where (2/2)
+#slide-text(0.8em)[
+
+#set smartquote(enabled: false)  // straight quotes, like real SQL
+
+#type-row("Numbers", [no quotes], (1fr, 1fr),
+  ex([hours #op[>] 10 #h(1em) hours #op[<] 10], [greater than / less than]),
+  ex([hours #op[>=] 10 #h(1em) hours #op[<=] 10], [... or equal to]),
+  ex([hours #op[BETWEEN] 5 #op[AND] 10], [5 to 10 (includes both)]),
+)
+#v(0.5em)
+#type-row("Booleans", [no quotes], (1fr, 1fr),
+  ex([is_ta #op[=] TRUE], [only the TAs]),
+  ex([is_ta #op[=] FALSE], [everyone else]),
+)
+#v(0.5em)
+#type-row("Dates", [in quotes: "YYYY-MM-DD"], (1fr, 1fr),
+  ex([hire_date #op[>] "2024-01-01"], [after Jan 1, 2024]),
+  ex([hire_date #op[<] "2024-01-01"], [before Jan 1, 2024]),
+  grid.cell(colspan: 2, ex([hire_date #op[BETWEEN] "2024-01-01" #op[AND] "2024-12-31"], [sometime in 2024])),
+)
 ]
 
 == Flow Charts <flowcharts>
@@ -1157,9 +1190,29 @@ End Function
 ]
 
 == Tableau <tableau>
+#slide-text(0.8em)[
 
-- If the assignment says "default", it means that you don't have to change anything. It is the default setting inside Tableau
-- Switching the x- and y-axis can reveal a clearer story (show an image of the button that does it)
+#let tab-blue = rgb("#1f5f99")
+#let tab-icon(x) = box(stroke: 0.5pt + luma(200), radius: 4pt, inset: 3pt,
+  crop-img("assets/img/tableau-trick.png", (135, 52), x, 18, 23, 23, width: 1.1cm))
+#let tab-card(title, body) = block(width: 100%, fill: card-fill, breakable: false,
+  stroke: (top: 3pt + tab-blue), inset: (x: 1em, y: 0.8em),
+  [#text(size: 1.1em, weight: "bold", fill: tab-blue, title) \ #body])
+
+#tab-card[“Default” means leave it alone][
+  If the assignment says “default,” you don't have to change anything. It's the setting Tableau starts with.
+]
+
+#v(0.6em)
+#tab-card[Toolbar buttons worth knowing][
+  #v(0.3em)
+  #grid(columns: (auto, 1fr), column-gutter: 1em, row-gutter: 0.8em, align: horizon,
+    tab-icon(17), [*Swap rows and columns:* flips the x- and y-axis. A sideways chart can tell a clearer story.],
+    tab-icon(56), [*Sort ascending:* smallest to largest],
+    tab-icon(95), [*Sort descending:* largest to smallest],
+  )
+]
+]
 
 == Solver <solver>
 #hide-slide-number()
@@ -1267,7 +1320,7 @@ for an ordered list (Numbers) -->
 // the general pattern every tag above follows
 #let tg(body) = text(font: "Consolas", fill: rgb("#2e7d45"), weight: "bold", body)
 #let lbl(body) = text(size: 0.85em, fill: luma(100), body)
-#block(width: 100%, fill: luma(244), stroke: (left: 2.5pt + rgb("#7cc98e")), inset: (x: 1em, y: 0.8em), text(size: 0.85em)[
+#block(width: 100%, fill: card-fill, stroke: (left: 2.5pt + rgb("#7cc98e")), inset: (x: 1em, y: 0.8em), text(size: 0.85em)[
   #grid(columns: (auto, 1fr), column-gutter: 2.5em, align: horizon,
     [
       *Every tag follows this pattern:*
@@ -1306,8 +1359,8 @@ for an ordered list (Numbers) -->
 <a href="../anotherpage.html">Visit Another Page</a>
 
 <!-- On-page Anchors -->
-<h1 id="top">This is the main heading</h2>
-<a href="#contact">Jump to Contact Us</a>
+<h1 id="top">This is the main heading</h1>
+<a href="#top">Jump to the top</a>
 ```)
 #v(1fr)
 ]
@@ -1373,13 +1426,13 @@ CSS:
 )
 // a site's card: colored title bar, then its steps
 #let embed-card(title, color, ..steps) = block(width: 100%,
-  fill: luma(248), stroke: (top: 3pt + color), inset: (x: 1em, y: 0.9em), {
+  fill: card-fill, stroke: (top: 3pt + color), inset: (x: 1em, y: 0.9em), {
     text(size: 1.2em, weight: "bold", fill: color, title)
     v(0.3em)
     for s in steps.pos() { s; v(0.55em) }
   })
 
-#align(center, text(fill: yt-red, style: "italic", size: 0.9em)[Embeds sometimes don't show up until your site is live])
+#align(center, text(size: 0.9em, warn[Embeds sometimes don't show up until your site is live]))
 #v(0.3em)
 
 #grid(columns: (1fr, 1fr), column-gutter: 1.2em,
@@ -1448,74 +1501,198 @@ CSS:
 ]
 
 == HTML: Uploading to GitHub
+#hide-slide-number()
+#slide-text(0.64em)[
+// no slide number here, so the cards can run into the bottom margin
+#pad(bottom: -30pt)[
 
-+ Click *New* to create a repository
-+ Check *Add README*
-+ Click *Create repository*
-+ On the repo page: *Add file → Upload files*
-+ Click *Commit changes*
+#let gh-green = rgb("#1f883d")
+#let gh-form = "assets/img/repo-creation.png"
+// one numbered step: badge + instruction, with an optional screenshot of
+// exactly what to click, beside the instruction (small buttons) or
+// underneath it (`below: true`, for wide screenshots)
+#let gh-badge(n) = box(width: 1.4em, height: 1.4em, radius: 50%, fill: gh-green,
+  align(center + horizon, text(fill: white, weight: "bold", size: 0.8em)[#n]))
+#let gh-step(n, body, shot: none, below: false) = if below {
+  grid(columns: (1.5em, 1fr), column-gutter: 0.6em, row-gutter: 0.35em, align: horizon,
+    gh-badge(n), body, [], shot)
+} else {
+  grid(columns: (1.5em, 1fr, auto), column-gutter: 0.6em, align: horizon,
+    gh-badge(n), body, if shot != none { shot })
+}
+// one phase of the process: a titled card of steps
+#let gh-card(title, ..steps) = block(width: 100%, height: 100%, fill: card-fill,
+  stroke: (top: 3pt + gh-green), inset: (x: 0.9em, y: 0.8em), {
+    text(size: 1.2em, weight: "bold", fill: gh-green, title)
+    v(0.2em)
+    for s in steps.pos() { s; v(0.7em) }
+  })
 
-#v(0.5em)
-#text(fill: red, weight: "bold", size: 0.9em)[Upload the CONTENTS of your folder, not the folder itself]
+#grid(columns: (1fr, 1fr), column-gutter: 1em, rows: 1fr,
+  gh-card("A. Create the repository",
+    gh-step(1)[Go to #link("https://github.com")[github.com] and sign in \ #text(fill: luma(100))[(or make a free account)]],
+    gh-step(2, shot: crop-img("assets/img/repo-new.png", (427, 132), 306, 28, 88, 42, width: 2.3cm, radius: 4pt))[
+      Click *New*],
+    gh-step(3, shot: crop-img(gh-form, (858, 833), 215, 50, 632, 90, width: 7.5cm, radius: 4pt), below: true)[
+      Type a *Repository name* #text(fill: luma(100))[(no spaces!)]],
+    gh-step(4, shot: crop-img(gh-form, (858, 833), 54, 536, 792, 74, width: 8.4cm, radius: 4pt), below: true)[
+      Leave it *Public* \ and turn *Add README* on],
+    gh-step(5, shot: crop-img(gh-form, (858, 833), 690, 784, 158, 42, width: 3.2cm, radius: 4pt))[
+      Click *Create repository* at the bottom],
+  ),
+  gh-card("B. Upload your website",
+    gh-step(6, shot: crop-img("assets/img/repo-upload.png", (335, 196), 60, 34, 222, 132, width: 3.6cm, radius: 4pt), below: true)[
+      On your new repository's page, \ click *Add file → Upload files*],
+    gh-step(7)[Open your project folder and drag everything #emph[inside] it
+      (#text(font: "Consolas")[index.html], #text(font: "Consolas")[css/], ...) onto the page
+      #v(0.3em)
+      #warn[Upload the CONTENTS of your project, not the folder itself]],
+    gh-step(8, shot: crop-img("assets/img/repo-commit.png", (437, 167), 66, 91, 168, 46, width: 3.4cm, radius: 4pt))[
+      Click *Commit changes* \ #text(fill: luma(100))[("commit" = save)]],
+    text(fill: luma(100), style: "italic")[Next: turn it into a live website → #link(<going-live>)[Going Live]],
+  ),
+)
+]
+]
 
-== Going Live
+== HTML: Going Live <going-live>
+#slide-text(0.72em)[
 
-+ Go to *Settings*
-+ Click *Pages* in the sidebar
-+ Under Branch, select `main` (instead of `None`) and *Save*
+#let gh-green = rgb("#1f883d")
+#let gh-badge(n) = box(width: 1.4em, height: 1.4em, radius: 50%, fill: gh-green,
+  align(center + horizon, text(fill: white, weight: "bold", size: 0.8em)[#n]))
+// one step as a card: badge + instruction on top, its screenshot below
+#let live-step(n, shot, body) = block(width: 100%, height: 100%, fill: card-fill,
+  stroke: (top: 3pt + gh-green), inset: (x: 0.8em, y: 0.7em),
+  grid(columns: (1.5em, 1fr), column-gutter: 0.6em, row-gutter: 0.7em, align: horizon,
+    gh-badge(n), body,
+    grid.cell(colspan: 2, align(center, shot)),
+  ))
 
-#v(0.5em)
-#text(fill: red, size: 0.9em)[After a couple of minutes, refresh the page — there will be a link to your website at the top.]
+#text(fill: luma(90))[On your repository's page (from the last slide):]
+#v(0.2em)
+#grid(columns: (1fr, 1fr, 1.25fr), column-gutter: 0.8em, rows: 5.6cm,
+  live-step(1, crop-img("assets/img/pages-settings.png", (438, 165), 148, 34, 112, 46, width: 3.4cm, radius: 4pt))[Click the *Settings* tab at the top],
+  live-step(2, crop-img("assets/img/pages-pages.png", (447, 332), 84, 118, 170, 76, width: 4.4cm, radius: 4pt))[In the left sidebar, click *Pages*],
+  live-step(3, crop-img("assets/img/pages-branch.png", (453, 161), 38, 84, 350, 50, width: 6.8cm, radius: 4pt))[Under *Branch*, change #text(font: "Consolas")[None] to #text(font: "Consolas")[main], then click *Save*],
+)
+#v(0.8em)
+#block(width: 100%, fill: card-fill, stroke: (top: 3pt + gh-green), inset: (x: 0.8em, y: 0.7em), [
+  #grid(columns: (1.5em, 1fr), column-gutter: 0.6em, align: horizon,
+    gh-badge(4),
+    [Wait a couple of minutes, then *refresh* the page. Your website's link will appear at the top:],
+  )
+  #v(0.5em)
+  #align(center, crop-img("assets/img/pages-live.png", (1082, 200), 26, 104, 1034, 82, width: 22.5cm, radius: 4pt))
+])
+]
 
 == CSS: Basics <css>
+#slide-text(0.8em)[
 
 #corner-acronym("Cascading", "Style", "Sheets")
 
-```html
-<!-- Connect CSS to HTML, in your <head> -->
-<link rel="stylesheet" href="styles.css" />
-```
+#let css-blue = rgb("#3d6b78")
+#let mono(body) = text(font: "Consolas", body)
+#let css-head(n, body) = text(size: 1.1em, weight: "bold", fill: css-blue)[#n. #body]
 
-```css
+#grid(columns: (1fr, 1fr), column-gutter: 1.5em, row-gutter: 1.1em, align: top,
+  // 1. connecting the stylesheet
+  [
+    #css-head(1)[Connect it to your HTML]
+    #v(0.2em)
+    #dark-code(size: 0.54em, width: 100%, ```html
+<head>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+```)
+    #v(0.1em)
+    #text(size: 0.85em, fill: luma(90))[Goes inside the #mono[\<head\>] of every page. #mono[href] is the path to your #mono[.css] file.]
+  ],
+  // 2. the one pattern all of CSS follows
+  [
+    #css-head(2)[Every rule looks like this]
+    #v(0.2em)
+    #dark-code(size: 0.62em, width: 100%, ```css
 selector {
     property: value;
     property2: value2;
 }
-```
-
-#text(size: 0.85em)[
-CSS is *cascading* because more recent styling supersedes previous styling — if you set the font color to blue, then later set it to red, it will be red.
+```)
+    #v(0.1em)
+    #text(size: 0.8em, fill: luma(90))[*property* = what to change, *value* = what to change it to. That's all CSS is! (see next slide)]
+  ],
+  // 3. cascading, spanning under both
+  grid.cell(colspan: 2)[
+    #v(0.6em)
+    #css-head(3)[It's cascading: the later rule wins]
+    #v(0.2em)
+    #grid(columns: (auto, 1fr), column-gutter: 2em, align: horizon,
+      dark-code(size: 0.62em, ```css
+p {
+    color: blue;
+}
+p {
+    color: red;
+}
+```),
+      box(width: 65%, text(size: 0.9em)[If you paint a door blue and then re-paint it red, it will be red instead of blue. CSS works the same way, but with everything not just colors.]),
+    )
+  ],
+)
 ]
 
 == CSS: Selectors / Properties / Values <css-selectors>
-#slide-text(0.75em)[
+#slide-text(0.8em)[
 
-```css
-/* Built-in selectors: the tags you use in your HTML (body, h1, p, a, img...) */
+#let css-blue = rgb("#3d6b78")
+#let mono(body) = text(font: "Consolas", body)
+#let sel-card(title, sub, body) = block(width: 100%, height: 9.8cm, fill: card-fill,
+  stroke: (top: 3pt + css-blue), inset: (x: 0.9em, y: 0.8em), [
+    #text(size: 1.15em, weight: "bold", fill: css-blue, title) \
+    #text(size: 0.85em, fill: luma(90), sub)
+    #v(0.2em)
+    #body
+  ])
+
+#grid(columns: (1fr, 1fr), column-gutter: 1em, rows: auto,
+  sel-card([Built-in selectors], [Use a tag name (#mono[body], #mono[h1], #mono[p], #mono[a], #mono[img], ...) to style every one of those tags.],
+    dark-code(size: 0.6em, width: 100%, notes: ("1": [← every \<body\>]), ```css
 body {
     background-color: #f0f0f0;
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 20px;
 }
-/* Class (custom) selectors: create your own with a period + name */
+```)),
+  sel-card([Class (custom) selectors], [Make your own: a *period* + any name. Styles only tags with that class.],
+    [
+      #dark-code(size: 0.6em, width: 100%, ```css
 .highlight {
     background-color: yellow;
     font-weight: bold;
 }
-```
+```)
+      #v(0.1em)
+      #text(size: 0.85em)[Apply it in your HTML (no period):]
+      #dark-code(size: 0.6em, width: 100%, ```html
+<p class="highlight">Hi!</p>
+```)
+    ]),
+)
 
-```html
-<p class="highlight">This text will be highlighted.</p>
-```
-
-#text(style: "italic", size: 0.85em)[There are A LOT of selectors and properties — Google and AI are your friend for finding exactly what you want!]
+#v(1fr)
+#align(center, block(fill: rgb("#fff5b3"), inset: (x: 1em, y: 0.6em), radius: 4pt,
+  text(size: 0.95em)[There are A LOT of selectors and properties. Google and AI are your friend for finding exactly what you want!]))
+#v(1fr)
 ]
 
 #focus-slide(background: black)[
   #text(size: 0.55em)[jimna-h.github.io/james_super_cool_is_201_cheatsheet]
   #v(0.5em)
   #box(fill: white, inset: 8pt)[#qrcode("https://jimna-h.github.io/james_super_cool_is_201_cheatsheet/is201-cheatsheet.pdf", width: 6cm, quiet-zone: true)]
+  #v(0.5em)
+  #text(size: 0.5em, fill: luma(200))[Suggestions? Reach out to me at #link("mailto:jbruce1@byu.edu")[#text(fill: white)[jbruce1\@byu.edu]]]
 ]
 
 #focus-slide(background: black)[
