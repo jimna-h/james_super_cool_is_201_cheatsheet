@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IS 201 Cheat Sheet: Present</title>
+<!--
+  Full-screen slide presenter for is201-cheatsheet.pdf.
+  Browsers' built-in PDF viewers disable links in their present/fullscreen
+  modes, so this renders each page with PDF.js and lays clickable links
+  (web links and the deck's internal "go to slide" links) over it.
+
+  Keys: → / Space / PageDown = next, ← / PageUp = previous,
+        Home / End = first / last, F = fullscreen, Esc = exit fullscreen.
+  Clicking anywhere that isn't a link also advances.
+  Add #5 to the URL to open on page 5.
+-->
+<style>
+  html, body {
+    margin: 0; height: 100%; background: #000; overflow: hidden;
+    font-family: system-ui, sans-serif;
+  }
+  #stage {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #page { position: relative; background: #fff; visibility: hidden; }
+  #page canvas { display: block; width: 100%; height: 100%; }
+  #links { position: absolute; inset: 0; }
+  #links a { position: absolute; display: block; cursor: pointer; }
+  #links a:hover { background: rgba(61, 107, 120, 0.12); }
+  #hud {
+    position: fixed; bottom: 12px; left: 16px;
+    color: #bbb; font-size: 13px; background: rgba(0,0,0,.55);
+    padding: 6px 10px; border-radius: 6px;
+    transition: opacity .4s; pointer-events: none;
+  }
+  body.idle #hud { opacity: 0; }
+  body.idle, body.idle * { cursor: none !important; }
+  #msg { color: #ccc; position: fixed; inset: 0; display: flex;
+    align-items: center; justify-content: center; font-size: 16px; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="page"><canvas></canvas><div id="links"></div></div></div>
+<div id="hud"></div>
+<div id="msg">Loading slides…</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  const PDF_URL = "is201-cheatsheet.pdf";
+  const pageEl = document.getElementById("page");
+  const canvas = pageEl.querySelector("canvas");
+  const linksEl = document.getElementById("links");
+  const hud = document.getElementById("hud");
+  let pdf = null, current = 1, renderTask = null;
+
+  function clamp(n) { return Math.max(1, Math.min(pdf.numPages, n)); }
+
+  async function show(n) {
+    current = clamp(n);
+    history.replaceState(null, "", "#" + current);
+    const page = await pdf.getPage(current);
+
+    // fit the page inside the window, keeping its aspect ratio
+    const base = page.getViewport({ scale: 1 });
+    const scale = Math.min(innerWidth / base.width, innerHeight / base.height);
+    const vp = page.getViewport({ scale });
+    pageEl.style.width = vp.width + "px";
+    pageEl.style.height = vp.height + "px";
+
+    // render sharp on high-DPI screens
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(vp.width * dpr);
+    canvas.height = Math.floor(vp.height * dpr);
+    if (renderTask) renderTask.cancel();
+    renderTask = page.render({
+      canvasContext: canvas.getContext("2d"),
+      viewport: page.getViewport({ scale: scale * dpr }),
+    });
+    try { await renderTask.promise; } catch (e) { return; }  // cancelled
+
+    // clickable link overlays
+    linksEl.replaceChildren();
+    for (const a of await page.getAnnotations()) {
+      if (a.subtype !== "Link") continue;
+      const [x1, y1, x2, y2] = vp.convertToViewportRectangle(a.rect);
+      const el = document.createElement("a");
+      Object.assign(el.style, {
+        left: Math.min(x1, x2) + "px", top: Math.min(y1, y2) + "px",
+        width: Math.abs(x2 - x1) + "px", height: Math.abs(y2 - y1) + "px",
+      });
+      if (a.url) {
+        el.href = a.url;
+        el.target = "_blank";
+        el.rel = "noopener";
+        el.title = a.url;
+      } else if (a.dest) {
+        el.href = "#";
+        el.addEventListener("click", async (e) => {
+          e.preventDefault();
+          const dest = typeof a.dest === "string" ? await pdf.getDestination(a.dest) : a.dest;
+          if (dest) show((await pdf.getPageIndex(dest[0])) + 1);
+        });
+      } else continue;
+      el.addEventListener("click", (e) => e.stopPropagation());
+      linksEl.appendChild(el);
+    }
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (!pdf) return;
+    const k = e.key;
+    if (["ArrowRight", "ArrowDown", "PageDown", " ", "Enter"].includes(k)) show(current + 1);
+    else if (["ArrowLeft", "ArrowUp", "PageUp", "Backspace"].includes(k)) show(current - 1);
+    else if (k === "Home") show(1);
+    else if (k === "End") show(pdf.numPages);
+    else if (k === "f" || k === "F") {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen();
+    } else return;
+    e.preventDefault();
+  });
+  document.getElementById("stage").addEventListener("click", () => pdf && show(current + 1));
+  addEventListener("resize", () => pdf && show(current));
+
+  // hide the cursor and page counter when the mouse sits still
+  let idleTimer;
+  function wake() {
+    document.body.classList.remove("idle");
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => document.body.classList.add("idle"), 2000);
+  }
+  addEventListener("mousemove", wake); wake();
+
+  pdfjsLib.getDocument(PDF_URL).promise.then((doc) => {
+    pdf = doc;
+    document.getElementById("msg").remove();
+    pageEl.style.visibility = "visible";
+    hud.textContent = "← → to move  ·  F = fullscreen";
+    show(parseInt(location.hash.slice(1)) || 1);
+  }).catch((err) => {
+    document.getElementById("msg").textContent = "Couldn't load the slides: " + err.message;
+  });
+</script>
+</body>
+</html>
