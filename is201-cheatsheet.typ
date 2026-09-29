@@ -764,8 +764,8 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
   grid.cell(colspan: 2, ex([ta_name #op[IN] ("James", "Robert", "Frankie")], [exact match for #underline[any] of these])),
 )
 #v(1.2em)
-#type-row("Blank", [no quotes], (1fr, 1fr), pad-y: 1.1em,
-  ex([ta_name #op[IS] NULL], [blank / missing (any type)]),
+#type-row("Blank", [any data type], (1fr, 1fr), pad-y: 1.1em,
+  ex([ta_name #op[IS] NULL], [blank / missing]),
   ex([ta_name #op[IS NOT] NULL], [has data]),
 )
 ]
