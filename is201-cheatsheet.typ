@@ -12,6 +12,17 @@
 #show: codly-init.with()
 #codly(languages: codly-languages, zebra-fill: none, stroke: none)
 
+// safe area: the classroom projector crops the edges (~6% off the right),
+// so the page is `safe-k` times bigger than the 16:9 slide the content was
+// designed for, with all the extra going into the margins. The content keeps
+// its exact size and layout; it just displays ~91% as big, centered, with
+// clear space at every edge.
+#let safe-k = 1.1
+#let base-w = 841.89pt
+#let base-h = 473.56pt
+#let safe-x = base-w * (safe-k - 1) / 2
+#let safe-y = base-h * (safe-k - 1) / 2
+
 #show: simple-theme.with(
   aspect-ratio: "16-9",
   header: none,
@@ -29,7 +40,10 @@
     below: 0.6em,
     align(center)[#text(1em, weight: "bold")[#underline(utils.display-current-heading(level: 2))]],
   ),
-  config-page(margin: (top: 1em, rest: 2em)),
+  config-page(
+    width: base-w * safe-k, height: base-h * safe-k,
+    margin: (top: 25pt + safe-y, bottom: 50pt + safe-y, x: 50pt + safe-x),
+  ),
 )
 
 // ---------- global sizing (matches the original slides' larger, readable type) ----------
@@ -741,10 +755,10 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
   row-gutter: (wc-big-gap, wc-small-gap, wc-big-gap, wc-big-gap, wc-small-gap, wc-big-gap, wc-small-gap),
   align: (left + horizon, left + horizon),
   [ta_name #wc-term[=] "James"], [→ Exact match],
-  [ta_name #wc-term[!=] "James"], [→ Not exact match],
+  [ta_name #wc-term[!=] "James"], [→ Everything but exact match],
   [ta_name #wc-term[<>] "James"], [#text(style: "italic")[(these are equivalent)]],
   [ta_name #wc-term[IS] NULL], [→ NULL means blank data \ (can also do #text(fill: black, weight: "bold")[IS NOT] NULL)],
-  [ta_name #wc-term[LIKE] '%ame%'], [→ The text #text(style: "italic")[("ame")] is contained within the attribute],
+  [ta_name #wc-term[LIKE] "%ame%"], [→ The text #text(style: "italic")[("ame")] is contained within the attribute],
   [], [#text(style: "italic")[( \_ = one wildcard,  % = any number of wildcards)]],
   grid.cell(colspan: 2)[ta_name #wc-term[IN] ("James", "Robert", "Frankie")],
   [], [→ Exact match for #underline[any] of these],
@@ -1350,32 +1364,94 @@ CSS:
 ]
 
 == HTML: Embedding
+#slide-text(0.8em)[
 
-#text(fill: red, style: "italic", size: 0.85em)[Sometimes doesn't work until you go live]
-
-#grid(columns: (1fr, 1fr), gutter: 1.5em,
-[
-  *YouTube* \
-  1. Click *Share* \
-  2. Click *Embed* \
-  3. Click *Copy* \
-  4. Paste into your code
-],
-[
-  *Tableau* \
-  1. Click the share icon \
-  2. Click *Copy Embed Code* \
-  3. Paste into your code
-]
+#let yt-red = rgb("#cc1f1a")
+#let tab-blue = rgb("#1f5f99")
+// one numbered step: a number badge, the instruction, and (optionally) a
+// small screenshot of exactly what to click
+#let embed-step(n, color, body, shot: none) = grid(
+  columns: (1.5em, 1fr, auto), column-gutter: 0.7em, align: horizon,
+  box(width: 1.4em, height: 1.4em, radius: 50%, fill: color,
+    align(center + horizon, text(fill: white, weight: "bold", size: 0.8em)[#n])),
+  body,
+  if shot != none { box(stroke: 0.5pt + luma(190), radius: 3pt, clip: true, shot) },
 )
+// a site's card: colored title bar, then its steps
+#let embed-card(title, color, ..steps) = block(width: 100%,
+  fill: luma(248), stroke: (top: 3pt + color), inset: (x: 1em, y: 0.9em), {
+    text(size: 1.2em, weight: "bold", fill: color, title)
+    v(0.3em)
+    for s in steps.pos() { s; v(0.55em) }
+  })
 
-== HTML: Folder Structure & Formatting
+#align(center, text(fill: yt-red, style: "italic", size: 0.9em)[Embeds sometimes don't show up until your site is live])
+#v(0.3em)
 
-*Use folders!* Keep `css/`, `html/`, `images/`, and `js/` separate, with `index.html` at the project root.
+#grid(columns: (1fr, 1fr), column-gutter: 1.2em,
+  embed-card("YouTube", yt-red,
+    embed-step(1, yt-red, shot: crop-img("assets/img/youtube-share.png",
+      (532, 88), 212, 22, 136, 60, width: 2.6cm))[Under the video, click *Share*],
+    embed-step(2, yt-red, shot: crop-img("assets/img/youtube-share-menu.png",
+      (608, 618), 36, 250, 100, 125, width: 1.7cm))[Click *Embed*],
+    embed-step(3, yt-red, shot: crop-img("assets/img/youtube-embed.png",
+      (541, 612), 440, 540, 100, 66, width: 2cm))[Click *Copy*],
+    embed-step(4, yt-red)[Paste it into your HTML],
+  ),
+  embed-card("Tableau", tab-blue,
+    embed-step(1, tab-blue)[Go to #link("https://public.tableau.com/app/discover")[#box(text(size: 0.8em)[public.tableau.com/app/discover])]],
+    embed-step(2, tab-blue)[Search for a relevant viz],
+    embed-step(3, tab-blue, shot: crop-img("assets/img/tableau-share.png",
+      (347, 66), 145, 12, 44, 40, width: 1.1cm))[Click the share icon],
+    embed-step(4, tab-blue, shot: crop-img("assets/img/tableau-embed.png",
+      (477, 277), 266, 95, 188, 36, width: 4cm))[Click *Copy Embed Code*],
+    embed-step(5, tab-blue)[Paste it into your HTML],
+  ),
+)
+]
 
-#v(0.5em)
-To quickly format everything correctly (tabs, long lines, etc.) in VS Code: \
-#hl[Right click → Format Document]
+== HTML: Best Practices
+#slide-text(0.72em)[
+
+#let mono(body) = text(font: "Consolas", body)
+#let good = rgb("#2e7d45")
+#let bad = rgb("#c62828")
+// a titled section with a colored rule on its left
+#let fs-section(title, body) = block(width: 100%, stroke: (left: 2.5pt + rgb("#3d6b78")),
+  inset: (left: 0.9em, y: 0.2em), [#text(size: 1.15em, weight: "bold", fill: rgb("#3d6b78"), title) \ #body])
+
+// the example project (VS Code explorer) on the left, the rules on the right
+#grid(columns: (auto, 1fr), column-gutter: 2em, align: top,
+  box(radius: 4pt, clip: true, image("assets/img/folder-expanded.png", width: 6.2cm)),
+  [
+    #fs-section[Use folders!][
+      Give each type of file its own folder: #mono[css/], #mono[html/], #mono[js/], and
+      #mono[assets/] (with #mono[img/], #mono[fonts/], #mono[icons/] inside).
+      #v(0.3em)
+      #mono[index.html] stays at the top level. It's your homepage, so it's the
+      first page the site loads.
+    ]
+    #v(0.9em)
+    #fs-section[Never use spaces in file or folder names][
+      Use a dash or underscore instead:
+      #v(0.1em)
+      #grid(columns: (auto, auto), column-gutter: 1.5em, row-gutter: 0.4em,
+        text(fill: good)[✓ #mono[about-me.html]], text(fill: bad)[✗ #mono[about me.html]],
+        text(fill: good)[✓ #mono[example_project/]], text(fill: bad)[✗ #mono[example project/]],
+      )
+    ]
+    #v(0.9em)
+    #fs-section[Format your code][
+      #grid(columns: (1fr, auto), column-gutter: 1em, align: horizon,
+        [Fixes indentation and long lines. \
+         Right click → *Format Document* \
+         #text(fill: luma(100))[shortcut: #mono[Shift+Alt+F]]],
+        crop-img("assets/img/format-doc.png", (612, 246), 112, 64, 386, 96, width: 7.2cm, radius: 4pt),
+      )
+    ]
+  ],
+)
+]
 
 == HTML: Uploading to GitHub
 
