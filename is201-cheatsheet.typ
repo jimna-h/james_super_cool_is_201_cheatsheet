@@ -711,30 +711,38 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
 #let sql-cm(comment) = text(size: sql-comment-size, fill: gray)[#raw("-- " + comment)]
 #let sql-n(n) = text(size: sql-num-size, fill: sql-num-color)[#n]
 
-#pad(left: -1.4em)[
-#no-codly(grid(
-  columns: (1.3em, auto, 1fr),
-  column-gutter: (0.45em, 0.8em),
-  row-gutter: 0.6em,
-  align: (right + horizon, left + horizon, left + horizon),
-  sql-n[1], sql-kw("SELECT"), sql-cm("attributes -- SELECT * for all, SELECT DISTINCT for unique results"),
-  sql-n[2], sql-kw("FROM"), sql-cm("tableA"),
-  sql-n[3], sql-kw("JOIN"), sql-cm("tableB ON tableA.attribute = tableB.attribute (order doesn't matter)"),
-  sql-n[4], sql-kw("WHERE"), sql-cm("attribute filters [=, !=, <>, IS, LIKE '%___%', IN (\"__\",\"__\",\"__\")]"),
-  sql-n[5], sql-kw("    AND/OR"), sql-cm("you only say WHERE once, but can have many filters"),
-  sql-n[6], sql-kw("GROUP BY"), sql-cm("all non-aggregated attributes when aggregating"),
-  sql-n[7], sql-kw("HAVING"), sql-cm("group-based filters (not used in the SQL project)"),
-  sql-n[8], sql-kw("ORDER BY"), sql-cm("attributes in ASC (default) / DESC order"),
-  sql-n[9], sql-kw("LIMIT"), sql-cm("to xx top results"),
-  sql-n[10], [], [],
-  sql-n[11], grid.cell(colspan: 2)[#sql-cm("aggregate(attribute) AS newName")],
-  sql-n[12], sql-kw("count()", color: sql-fn-color), [],
-  sql-n[13], sql-kw("avg()", color: sql-fn-color), [],
-  sql-n[14], sql-kw("min()", color: sql-fn-color), [],
-  sql-n[15], sql-kw("max()", color: sql-fn-color), [],
-  sql-n[16], grid.cell(colspan: 2)[#sql-cm("etc.")],
-))
+#let sql-see(lbl, name) = text(size: sql-comment-size)[#link(lbl)[#raw("see " + name)]]
+#let sql-card(body) = block(width: 100%, fill: card-fill, stroke: (left: 3pt + sql-kw-color),
+  inset: (x: 0.9em, y: 0.7em), body)
+
+#sql-card[
+  #text(size: 0.85em, style: "italic", fill: luma(90))[Always written in this order. Only #text(font: "Consolas", style: "normal")[SELECT] and #text(font: "Consolas", style: "normal")[FROM] are required.]
+  #v(0.2em)
+  #no-codly(grid(
+    columns: (1.3em, auto, 1fr),
+    column-gutter: (0.45em, 0.8em),
+    row-gutter: 0.6em,
+    align: (right + horizon, left + horizon, left + horizon),
+    sql-n[1], sql-kw("SELECT"), sql-cm("which attributes to show (* = all, DISTINCT = no duplicate rows)"),
+    sql-n[2], sql-kw("FROM"), sql-cm("the table to pull from (tableA)"),
+    sql-n[3], sql-kw("JOIN"), [#sql-cm("tableB ON tableA.key = tableB.key") #h(0.6em) #sql-see(<sql-join>, "Join slides")],
+    sql-n[4], sql-kw("WHERE"), [#sql-cm("keep only rows that pass a filter") #h(0.6em) #sql-see(<sql-where>, "Where slides")],
+    sql-n[5], sql-kw("    AND/OR"), sql-cm("add more filters (only write WHERE once)"),
+    sql-n[6], sql-kw("GROUP BY"), sql-cm("with aggregates: list every SELECT attribute that isn't aggregated"),
+    sql-n[7], sql-kw("HAVING"), sql-cm("like WHERE, but filters groups"),
+    sql-n[8], sql-kw("ORDER BY"), sql-cm("sort by an attribute: ASC (default, low to high) or DESC"),
+    sql-n[9], sql-kw("LIMIT"), sql-cm("only show the first N rows (e.g. LIMIT 10)"),
+  ))
 ]
+#v(0.6em)
+#block(width: 62%, sql-card[
+  // aggregates: what they are, the pattern, an example, then the other functions
+  #sql-cm("aggregates turn many rows into one value") \
+  #sql-cm("function(attribute) AS new_name") \
+  #text(font: "Consolas", size: sql-code-size * 0.64)[#text(fill: sql-kw-color)[SELECT] #text(fill: sql-fn-color)[avg]\(hours) #text(fill: sql-kw-color)[AS] avg_hours]
+  #v(0.1em)
+  #sql-cm("examples: count(), sum(), avg(), min(), max()")
+])
 
 #corner-acronym("Structured", "Query", "Language")
 ]
@@ -751,7 +759,7 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
     grid(columns: cols, column-gutter: 1.5em, row-gutter: gap, ..items.pos()),
   ))
 
-== SQL: Where (1/2)
+== SQL: Where (1/2) <sql-where>
 #slide-text(0.8em)[
 
 #set smartquote(enabled: false)  // straight quotes, like real SQL
@@ -791,6 +799,101 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
   ex([hire_date #op[<] "2024-01-01"], [before Jan 1, 2024]),
   grid.cell(colspan: 2, ex([hire_date #op[BETWEEN] "2024-01-01" #op[AND] "2024-12-31"], [sometime in 2024])),
 )
+]
+
+// shared by both JOIN slides
+#let match-fill = sql-pink.lighten(80%)
+#let miss(body) = text(fill: luma(150), body)
+#let null-cell = text(fill: sql-pink, style: "italic")[NULL]
+// a tiny example table: bold header row, light borders
+#let mini-table(title, ..cells, size: 0.62em) = [
+  #if title != "" [#text(size: 0.7em, weight: "bold", font: "Consolas", title) #v(-0.1em)]
+  #table(columns: 2, inset: (x: 0.45em, y: 0.25em), stroke: 0.5pt + luma(190),
+    fill: (_, y) => if y == 0 { luma(230) },
+    ..cells.pos().map(c => if c.func() == table.cell { c } else { text(size: size, font: "Consolas", c) }))
+]
+#let hit(body, size: 0.62em) = table.cell(fill: match-fill, text(size: size, font: "Consolas", body))
+// Venn diagram for one join type: A on the left, B on the right, with the
+// rows that join keeps shaded
+#let venn(keep-a, keep-b, d: 1.5cm) = {
+  let off = d * 0.57
+  let f = sql-pink.lighten(55%)
+  let s = 0.8pt + luma(80)
+  box(width: d + off, height: d, {
+    if keep-a { place(circle(radius: d / 2, fill: f, stroke: none)) }
+    if keep-b { place(dx: off, circle(radius: d / 2, fill: f, stroke: none)) }
+    // the overlap is always kept
+    place(box(width: d, height: d, radius: d / 2, clip: true,
+      place(dx: off, circle(radius: d / 2, fill: f, stroke: none))))
+    place(circle(radius: d / 2, stroke: s))
+    place(dx: off, circle(radius: d / 2, stroke: s))
+    place(dx: d * 0.13, dy: d / 2 - 0.25cm, text(size: 0.8em, weight: "bold")[A])
+    place(dx: d + off - d * 0.3, dy: d / 2 - 0.25cm, text(size: 0.8em, weight: "bold")[B])
+  })
+}
+
+== SQL: Join (1/2) <sql-join>
+#slide-text(0.8em)[
+
+#set smartquote(enabled: false)  // straight quotes, like real SQL
+
+#text(size: 1.2em, weight: "bold", fill: sql-pink)[JOIN] #h(0.5em)
+#text(style: "italic", fill: luma(90))[combines two tables, keeping rows that match in #underline[both]]
+#v(0.5em)
+#grid(columns: (auto, 1fr), column-gutter: 1.2em, align: horizon,
+  dark-code(size: 0.62em, ```sql
+SELECT ta.name, section.room
+FROM ta
+JOIN section ON ta.section_id = section.section_id
+```),
+  text(size: 0.85em, fill: luma(90))[#text(font: "Consolas")[ON] says which columns have to match. Each #text(font: "Consolas")[ta] row is paired with the #text(font: "Consolas")[section] row that has the same #text(font: "Consolas")[section_id].],
+)
+#v(1fr)
+#align(center, grid(columns: 4, column-gutter: 1.8em, align: top + left,
+  mini-table("ta", [name], [section_id],
+    [James], hit(size: 0.75em)[1], [Robert], hit(size: 0.75em)[2], miss[Frankie], miss[3], size: 0.75em),
+  mini-table("section", [section_id], [room],
+    hit(size: 0.75em)[1], [TNRB 170], hit(size: 0.75em)[2], [TNRB 250], miss[4], miss[JKB 120], size: 0.75em),
+  pad(top: 2em, text(size: 1.6em, fill: luma(120))[→]),
+  mini-table("result", [name], [room],
+    [James], [TNRB 170], [Robert], [TNRB 250], size: 0.75em),
+))
+#v(0.6em)
+#align(center, text(size: 0.85em, fill: luma(90))[Frankie (section 3) and JKB 120 (section 4) have no match, so they're left out.])
+#v(1fr)
+]
+
+== SQL: Join (2/2)
+#slide-text(0.8em)[
+
+#set smartquote(enabled: false)
+// one join type: its Venn diagram, name, meaning, and what it would return
+// for the example on the last slide
+#let join-card(name, a, b, note, ..rows) = block(width: 100%, height: 5.2cm, fill: card-fill,
+  stroke: (left: 3pt + sql-pink), inset: (x: 0.8em, y: 0.5em), [
+    #text(font: "Consolas", weight: "bold", fill: sql-pink, name) \
+    #text(size: 0.8em, fill: luma(90), note)
+    #v(-0.1em)
+    #grid(columns: (auto, 1fr), column-gutter: 1.2em, align: horizon,
+      venn(a, b, d: 1.2cm),
+      mini-table("", [name], [room], ..rows, size: 0.52em),
+    )
+  ])
+
+#text(size: 0.8em, style: "italic", fill: luma(90))[A = the #text(font: "Consolas")[FROM] table (#text(font: "Consolas")[ta]), B = the joined table (#text(font: "Consolas")[section]); results use the last slide's example.]
+#v(0.2em)
+#grid(columns: (1fr, 1fr), gutter: 0.6em,
+  join-card("INNER JOIN", false, false, [only matches (same as just JOIN)],
+    [James], [TNRB 170], [Robert], [TNRB 250]),
+  join-card("LEFT JOIN", true, false, [all of A + matches from B],
+    [James], [TNRB 170], [Robert], [TNRB 250], [Frankie], null-cell),
+  join-card("RIGHT JOIN", false, true, [all of B + matches from A],
+    [James], [TNRB 170], [Robert], [TNRB 250], null-cell, [JKB 120]),
+  join-card("FULL OUTER JOIN", true, true, [everything from both],
+    [James], [TNRB 170], [Robert], [TNRB 250], [Frankie], null-cell, null-cell, [JKB 120]),
+)
+#v(0.3em)
+#align(center, text(size: 0.8em, fill: luma(90))[Missing matches show up as #null-cell (that's where #text(font: "Consolas")[IS NULL] comes in handy).])
 ]
 
 == Flow Charts <flowcharts>
