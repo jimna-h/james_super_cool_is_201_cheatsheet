@@ -12,16 +12,13 @@
 #show: codly-init.with()
 #codly(languages: codly-languages, zebra-fill: none, stroke: none)
 
-// safe area: the classroom projector crops the edges (~6% off the right),
-// so the page is `safe-k` times bigger than the 16:9 slide the content was
-// designed for, with all the extra going into the margins. The content keeps
-// its exact size and layout; it just displays ~91% as big, centered, with
-// clear space at every edge.
-#let safe-k = 1.1
+// safe area: the classroom projector crops the right edge (~6%), so the
+// page is `safe-right` wider than the 16:9 slide the content was designed
+// for, and all of that extra goes into the right margin. The content keeps
+// its exact size and layout; it just sits clear of the cropped edge.
 #let base-w = 841.89pt
 #let base-h = 473.56pt
-#let safe-x = base-w * (safe-k - 1) / 2
-#let safe-y = base-h * (safe-k - 1) / 2
+#let safe-right = 42pt
 
 #show: simple-theme.with(
   aspect-ratio: "16-9",
@@ -41,8 +38,8 @@
     align(center)[#text(1em, weight: "bold")[#underline(utils.display-current-heading(level: 2))]],
   ),
   config-page(
-    width: base-w * safe-k, height: base-h * safe-k,
-    margin: (top: 25pt + safe-y, bottom: 50pt + safe-y, x: 50pt + safe-x),
+    width: base-w + safe-right, height: base-h,
+    margin: (top: 25pt, bottom: 50pt, left: 50pt, right: 50pt + safe-right),
   ),
 )
 
