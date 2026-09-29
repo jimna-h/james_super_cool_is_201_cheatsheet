@@ -141,8 +141,7 @@
 // Lets a VBA slide's code run into the page's side/bottom margins (and, with
 // a negative `top`, up beside the slide title) so it can fill the slide the
 // way the original's code does.
-#let vba-fill(top: 0pt, body) = pad(top: top, bottom: -36pt, x: -20pt,
-  block(stroke: (left: 2pt + topic.vba.lighten(35%)), inset: (left: 0.7em), body))
+#let vba-fill(top: 0pt, body) = pad(top: top, bottom: -36pt, x: -20pt, body)
 
 // ---------- helpers ----------
 
@@ -194,6 +193,10 @@
     // `size` is the code's actual size
     show raw: set text(font: ("Consolas", "Courier New"), size: 1.5625em)
     set par(leading: 0pt)
+    // SQL keywords in the deck's SQL pink (lightened to read on the dark
+    // background); an explicit list, since the bundled SQL grammar labels
+    // some keywords (AND, AS, HAVING, ON...) as operators
+    show regex("\b(SELECT|FROM|JOIN|ON|WHERE|AND|OR|NOT|IS|NULL|IN|LIKE|BETWEEN|GROUP BY|HAVING|ORDER BY|ASC|DESC|LIMIT|AS|DISTINCT)\b"): it => if code.lang == "sql" { text(fill: rgb("#f06bc4"), it) } else { it }
     // the whole block is highlighted at once (keeping multi-line syntax
     // context, e.g. CSS properties inside braces), but every line gets the
     // same fixed-height row, and a note is placed just past its line's end
@@ -274,7 +277,7 @@
 // left, right always; bottom too, since the header is always followed by a
 // divider) — never as a separately-computed overlay — so it is always
 // exactly where this row actually is, no matter the scale or table size.
-#let erow-header(coord, title, width: 6cm, fill: topic.erd.lighten(85%), scale: 1.0, stroke: 0.5pt + gray) = node(
+#let erow-header(coord, title, width: 6cm, fill: luma(230), scale: 1.0, stroke: 0.5pt + gray) = node(
   coord,
   box(width: width, height: erd-header-h * scale, fill: fill, stroke: (top: stroke, bottom: stroke, left: stroke, right: stroke))[
     #align(left + horizon)[
@@ -315,7 +318,7 @@
 
 // a full small entity box: header + PK row + attribute rows, e.g.
 // #erd-box(0, 0, "Store", "StoreID", ("StoreLocation", "SquareFootage"))
-#let erd-box(col, row, title, pk, attrs, width: 3.6cm, header-fill: topic.erd.lighten(85%), pk-fill: erd-pk-fill, scale: 1.0) = (
+#let erd-box(col, row, title, pk, attrs, width: 3.6cm, header-fill: luma(230), pk-fill: erd-pk-fill, scale: 1.0) = (
   erow-header((col, row), title, width: width, fill: header-fill, scale: scale),
   erow((col, row + 1), "PK", underline[#pk], width: width, fill: pk-fill, scale: scale, key-divider: true, bottom: true),
   ..attrs.enumerate().map(((i, a)) => erow(
@@ -587,21 +590,21 @@
     #underline[Read #hl(color: rgb("#c2d6f4"))[left-to-right] AND #hl(color: rgb("#f4d9a0"))[right-to-left]]
 
     #v(0.7em)
-    #text(weight: "bold", fill: topic.erd)[One to One (1:1)] \
+    *One to One (1:1)* \
     #pad(left: 1em)[
       #hl(color: rgb("#c2d6f4"))[A store has one manager] #sym.space
       #hl(color: rgb("#f4d9a0"))[A manager works at one store]
     ]
 
     #v(0.7em)
-    #text(weight: "bold", fill: topic.erd)[One to Many (1:N)] \
+    *One to Many (1:N)* \
     #pad(left: 1em)[
       #hl(color: rgb("#c2d6f4"))[A customer can have multiple orders] #sym.space
       #hl(color: rgb("#f4d9a0"))[An order belongs to one customer]
     ]
 
     #v(0.7em)
-    #text(weight: "bold", fill: topic.erd)[Many to Many (M:N)] \
+    *Many to Many (M:N)* \
     #pad(left: 1em)[
       #hl(color: rgb("#c2d6f4"))[A student can enroll in many courses] #sym.space
       #hl(color: rgb("#f4d9a0"))[A course can have lots of students]
@@ -724,6 +727,9 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
 // it stays clear of the code below)
 #place(top + left, text(size: 0.69em)[go to #link("https://gaskination.com/sql/")[gaskination.com/sql]])
 
+// (no slide number on acronym pages, so this can use the bottom margin)
+#pad(bottom: -36pt)[
+
 // styling matches the original slide: pink clause keywords, purple aggregate
 // functions, gray comments — here aligned into a straight column (rather
 // than trailing right after each line's code) so the bigger comment text
@@ -761,17 +767,22 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
     sql-n[9], sql-kw("LIMIT"), sql-cm("only show the first N rows (e.g. LIMIT 10)"),
   ))
 ]
-#v(0.6em)
-#block(width: 62%, sql-card[
+#v(0.8em)
+#block(width: 74%, sql-card[
   // aggregates: what they are, the pattern, an example, then the other functions
   #sql-cm("aggregates turn many rows into one value") \
   #sql-cm("function(attribute) AS new_name") \
-  #text(font: "Consolas", size: sql-code-size * 0.64)[#text(fill: sql-kw-color)[SELECT] #text(fill: sql-fn-color)[avg]\(hours) #text(fill: sql-kw-color)[AS] avg_hours]
+  #text(font: "Consolas", size: sql-code-size * 0.64)[#text(fill: sql-kw-color)[SELECT] #text(fill: sql-fn-color)[avg]\(imdb_score) #text(fill: sql-kw-color)[AS] avg_score]
   #v(0.1em)
   #sql-cm("examples: count(), sum(), avg(), min(), max()")
+  #v(0.6em)
+  // plain math (not an aggregate): calculated for each row
+  #sql-cm("you can also do math with attributes (+ - * /)") \
+  #text(font: "Consolas", size: sql-code-size * 0.64)[#text(fill: sql-kw-color)[SELECT] imdb_score / duration #text(fill: sql-kw-color)[AS] score_per_min]
 ])
 
 #corner-acronym("Structured", "Query", "Language", color: topic.sql)
+]
 ]
 
 // shared by both WHERE slides: one row per kind of filter, with a pink
@@ -792,39 +803,39 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
 #set smartquote(enabled: false)  // straight quotes, like real SQL
 
 #type-row("Text", [in quotes], (1fr, 1fr), gap: 1.5em, pad-y: 1.1em,
-  ex([ta_name #op[=] "James"], [exactly "James"]),
-  ex([ta_name #op[!=] "James" #h(0.6em) ta_name #op[<>] "James"], [anything but "James"]),
-  ex([ta_name #op[LIKE] "%ame%"], [contains "ame"]),
+  ex([name #op[=] "James"], [exactly "James"]),
+  ex([name #op[!=] "James" \ name #op[<>] "James"], [anything but "James"]),
+  ex([title #op[LIKE] "%Grail%"], [contains "Grail"]),
   text(size: 0.8em, fill: luma(90))[#text(font: "Consolas", size: 1.06em)[%] = any number of characters \ #text(font: "Consolas", size: 1.06em)[\_] = exactly one character],
-  grid.cell(colspan: 2, ex([ta_name #op[IN] ("James", "Robert", "Frankie")], [exact match for #underline[any] of these])),
+  grid.cell(colspan: 2, ex([name #op[IN] ("James", "Ava", "Sam")], [exact match for #underline[any] of these])),
 )
 #v(1.2em)
 #type-row("Blank", [any data type], (1fr, 1fr), pad-y: 1.1em,
-  ex([ta_name #op[IS] NULL], [blank / missing]),
-  ex([ta_name #op[IS NOT] NULL], [has data]),
+  ex([movie_id #op[IS] NULL], [blank / missing]),
+  ex([movie_id #op[IS NOT] NULL], [has data]),
 )
 ]
 
 == SQL: Where (2/2)
-#slide-text(0.8em)[
+#slide-text(0.74em)[
 
 #set smartquote(enabled: false)  // straight quotes, like real SQL
 
 #type-row("Numbers", [no quotes], (1fr, 1fr),
-  ex([hours #op[>] 10 #h(1em) hours #op[<] 10], [greater than / less than]),
-  ex([hours #op[>=] 10 #h(1em) hours #op[<=] 10], [... or equal to]),
-  ex([hours #op[BETWEEN] 5 #op[AND] 10], [5 to 10 (includes both)]),
+  ex([imdb_score #op[>] 8 \ imdb_score #op[<] 8], [greater than / less than]),
+  ex([imdb_score #op[>=] 8 \ imdb_score #op[<=] 8], [... or equal to]),
+  grid.cell(colspan: 2, ex([duration #op[BETWEEN] 90 #op[AND] 120], [90 to 120 minutes (includes both)])),
 )
 #v(0.5em)
 #type-row("Booleans", [no quotes], (1fr, 1fr),
-  ex([is_ta #op[=] TRUE], [only the TAs]),
-  ex([is_ta #op[=] FALSE], [everyone else]),
+  ex([owns_copy #op[=] TRUE], [people who own the movie]),
+  ex([owns_copy #op[=] FALSE], [everyone else]),
 )
 #v(0.5em)
 #type-row("Dates", [in quotes: "YYYY-MM-DD"], (1fr, 1fr),
-  ex([hire_date #op[>] "2024-01-01"], [after Jan 1, 2024]),
-  ex([hire_date #op[<] "2024-01-01"], [before Jan 1, 2024]),
-  grid.cell(colspan: 2, ex([hire_date #op[BETWEEN] "2024-01-01" #op[AND] "2024-12-31"], [sometime in 2024])),
+  ex([release_date #op[>] "1980-01-01"], [released after 1980]),
+  ex([birth_date #op[<] "2000-01-01"], [born before 2000]),
+  grid.cell(colspan: 2, ex([release_date #op[BETWEEN] "1970-01-01" #op[AND] "1979-12-31"], [released in the 1970s])),
 )
 ]
 
@@ -837,9 +848,9 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
   #if title != "" [#text(size: 0.7em, weight: "bold", font: "Consolas", title) #v(-0.1em)]
   #table(columns: 2, inset: (x: 0.45em, y: 0.25em), stroke: 0.5pt + luma(190),
     fill: (_, y) => if y == 0 { luma(230) },
-    ..cells.pos().map(c => if c.func() == table.cell { c } else { text(size: size, font: "Consolas", c) }))
+    ..cells.pos().map(c => if c.func() == table.cell { c } else { box(text(size: size, font: "Consolas", c)) }))
 ]
-#let hit(body, size: 0.62em) = table.cell(fill: match-fill, text(size: size, font: "Consolas", body))
+#let hit(body, size: 0.62em) = table.cell(fill: match-fill, box(text(size: size, font: "Consolas", body)))
 // Venn diagram for one join type: A on the left, B on the right, with the
 // rows that join keeps shaded
 #let venn(keep-a, keep-b, d: 1.5cm) = {
@@ -854,8 +865,9 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
       place(dx: off, circle(radius: d / 2, fill: f, stroke: none))))
     place(circle(radius: d / 2, stroke: s))
     place(dx: off, circle(radius: d / 2, stroke: s))
-    place(dx: d * 0.13, dy: d / 2 - 0.25cm, text(size: 0.8em, weight: "bold")[A])
-    place(dx: d + off - d * 0.3, dy: d / 2 - 0.25cm, text(size: 0.8em, weight: "bold")[B])
+    // labels centered in each circle's own (non-overlapping) part
+    place(dx: off / 2 - 0.13cm, dy: d / 2 - 0.25cm, text(size: 0.8em, weight: "bold")[A])
+    place(dx: d + off / 2 - 0.13cm, dy: d / 2 - 0.25cm, text(size: 0.8em, weight: "bold")[B])
   })
 }
 
@@ -869,24 +881,25 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
 #v(0.5em)
 #grid(columns: (auto, 1fr), column-gutter: 1.2em, align: horizon,
   dark-code(size: 0.62em, ```sql
-SELECT ta.name, section.room
-FROM ta
-JOIN section ON ta.section_id = section.section_id
+SELECT survey_responders.name, movie_info.title
+FROM survey_responders
+JOIN movie_info
+  ON survey_responders.movie_id = movie_info.movie_id
 ```),
-  text(size: 0.85em, fill: luma(90))[#text(font: "Consolas")[ON] says which columns have to match. Each #text(font: "Consolas")[ta] row is paired with the #text(font: "Consolas")[section] row that has the same #text(font: "Consolas")[section_id].],
+  text(size: 0.85em, fill: luma(90))[#text(font: "Consolas")[ON] says which columns have to match. Each #text(font: "Consolas")[survey_responders] row is paired with the #text(font: "Consolas")[movie_info] row that has the same #text(font: "Consolas")[movie_id].],
 )
 #v(1fr)
-#align(center, grid(columns: 4, column-gutter: 1.8em, align: top + left,
-  mini-table("ta", [name], [section_id],
-    [James], hit(size: 0.75em)[1], [Robert], hit(size: 0.75em)[2], miss[Frankie], miss[3], size: 0.75em),
-  mini-table("section", [section_id], [room],
-    hit(size: 0.75em)[1], [TNRB 170], hit(size: 0.75em)[2], [TNRB 250], miss[4], miss[JKB 120], size: 0.75em),
+#align(center, grid(columns: 4, column-gutter: 1.2em, align: top + left,
+  mini-table("survey_responders", [name], [movie_id],
+    [James], hit(size: 0.75em)[1], [Ava], hit(size: 0.75em)[2], miss[Sam], miss[3], size: 0.75em),
+  mini-table("movie_info", [movie_id], [title],
+    hit(size: 0.75em)[1], [Monty Python…], hit(size: 0.75em)[2], [Princess Bride], miss[4], miss[Shrek], size: 0.75em),
   pad(top: 2em, text(size: 1.6em, fill: luma(120))[→]),
-  mini-table("result", [name], [room],
-    [James], [TNRB 170], [Robert], [TNRB 250], size: 0.75em),
+  mini-table("result", [name], [title],
+    [James], [Monty Python…], [Ava], [Princess Bride], size: 0.75em),
 ))
 #v(0.6em)
-#align(center, text(size: 0.85em, fill: luma(90))[Frankie (section 3) and JKB 120 (section 4) have no match, so they're left out.])
+#align(center, text(size: 0.85em, fill: luma(90))[Sam (movie 3) and Shrek (movie 4) have no match, so they're left out.])
 #v(1fr)
 ]
 
@@ -903,24 +916,50 @@ JOIN section ON ta.section_id = section.section_id
     #v(-0.1em)
     #grid(columns: (auto, 1fr), column-gutter: 1.2em, align: horizon,
       venn(a, b, d: 1.2cm),
-      mini-table("", [name], [room], ..rows, size: 0.52em),
+      mini-table("", [name], [title], ..rows, size: 0.52em),
     )
   ])
 
-#text(size: 0.8em, style: "italic", fill: luma(90))[A = the #text(font: "Consolas")[FROM] table (#text(font: "Consolas")[ta]), B = the joined table (#text(font: "Consolas")[section]); results use the last slide's example.]
+#text(size: 0.8em, style: "italic", fill: luma(90))[A = the #text(font: "Consolas")[FROM] table, B = the joined table; same example as the last slide.]
 #v(0.2em)
 #grid(columns: (1fr, 1fr), gutter: 0.6em,
   join-card("INNER JOIN", false, false, [only matches (same as just JOIN)],
-    [James], [TNRB 170], [Robert], [TNRB 250]),
+    [James], [Monty Python…], [Ava], [Princess Bride]),
   join-card("LEFT JOIN", true, false, [all of A + matches from B],
-    [James], [TNRB 170], [Robert], [TNRB 250], [Frankie], null-cell),
+    [James], [Monty Python…], [Ava], [Princess Bride], [Sam], null-cell),
   join-card("RIGHT JOIN", false, true, [all of B + matches from A],
-    [James], [TNRB 170], [Robert], [TNRB 250], null-cell, [JKB 120]),
+    [James], [Monty Python…], [Ava], [Princess Bride], null-cell, [Shrek]),
   join-card("FULL OUTER JOIN", true, true, [everything from both],
-    [James], [TNRB 170], [Robert], [TNRB 250], [Frankie], null-cell, null-cell, [JKB 120]),
+    [James], [Monty Python…], [Ava], [Princess Bride], [Sam], null-cell, null-cell, [Shrek]),
 )
 #v(0.3em)
 #align(center, text(size: 0.8em, fill: luma(90))[Missing matches show up as #null-cell (that's where #text(font: "Consolas")[IS NULL] comes in handy).])
+]
+
+== SQL: Example <sql-example>
+#hide-slide-number()
+#slide-text(0.8em)[
+// no slide number here, so the content can run into the bottom margin
+#pad(bottom: -36pt)[
+
+#set smartquote(enabled: false)
+#text(size: 1.2em, weight: "bold", fill: sql-pink)[Question:] #h(0.4em)
+#text(style: "italic", fill: luma(90))[For well-rated (7+) movies with more than one fan: how many years after each movie came out were its fans born, on average?]
+#v(0.4em)
+#dark-code(width: 100%, size: 0.62em, pitch: 2em, ```sql
+SELECT movie_info.title,
+       count(*) AS fans,
+       avg(survey_responders.birth_date - movie_info.release_date) AS avg_years_between
+FROM survey_responders
+JOIN movie_info ON survey_responders.movie_id = movie_info.movie_id
+WHERE movie_info.imdb_score >= 7
+  AND survey_responders.birth_date IS NOT NULL
+GROUP BY movie_info.title
+HAVING count(*) > 1
+ORDER BY avg_years_between DESC
+LIMIT 5
+```)
+]
 ]
 
 == Flow Charts <flowcharts>
