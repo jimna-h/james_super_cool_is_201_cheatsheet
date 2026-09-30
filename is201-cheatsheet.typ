@@ -520,35 +520,25 @@
   #diagram(
     node-stroke: none,
     spacing: (1.6cm, 0pt),
-    erow-header((0, 0), "company", width: 4.6cm),
-    erow((0, 1), "PK", underline[company_id], width: 4.6cm, fill: erd-pk-fill, name: <company-pk>, key-divider: true, bottom: true),
-    erow((0, 2), "", "company_name", width: 4.6cm, key-divider: true),
-    erow((0, 3), "", "employees", width: 4.6cm, key-divider: true),
-    erow((0, 4), "", "followers", width: 4.6cm, key-divider: true),
-    erow((0, 5), "", "industry", width: 4.6cm, key-divider: true),
-    erow((0, 6), "", "state", width: 4.6cm, key-divider: true),
-    erow((0, 7), "", "country", width: 4.6cm, key-divider: true),
-    erow((0, 8), "", "city", width: 4.6cm, key-divider: true),
-    erow((0, 9), "", "zip", width: 4.6cm, key-divider: true, bottom: true),
+    erow-header((0, 0), "movie_info", width: 4.6cm),
+    erow((0, 1), "PK", underline[movie_id], width: 4.6cm, fill: erd-pk-fill, name: <company-pk>, key-divider: true, bottom: true),
+    erow((0, 2), "", "title", width: 4.6cm, key-divider: true),
+    erow((0, 3), "", "release_date", width: 4.6cm, key-divider: true),
+    erow((0, 4), "", "imdb_score", width: 4.6cm, key-divider: true),
+    erow((0, 5), "", "duration", width: 4.6cm, key-divider: true),
+    erow((0, 6), "", "genre", width: 4.6cm, key-divider: true),
+    erow((0, 7), "", "director", width: 4.6cm, key-divider: true, bottom: true),
 
-    erow-header((1, 0), "posting", width: 5.4cm),
-    erow((1, 1), "PK", underline[job_id], width: 5.4cm, fill: erd-pk-fill, key-divider: true, bottom: true),
-    erow((1, 2), "", "title", width: 5.4cm, key-divider: true),
-    erow((1, 3), "", "description", width: 5.4cm, key-divider: true),
-    erow((1, 4), "", "pay_period", width: 5.4cm, key-divider: true),
-    erow((1, 5), "", "work_type", width: 5.4cm, key-divider: true),
-    erow((1, 6), "", "job_location", width: 5.4cm, key-divider: true),
-    erow((1, 7), "", "applies", width: 5.4cm, key-divider: true),
-    erow((1, 8), "", "remote", width: 5.4cm, key-divider: true),
-    erow((1, 9), "", "views", width: 5.4cm, key-divider: true),
-    erow((1, 10), "", "level", width: 5.4cm, key-divider: true),
-    erow((1, 11), "", "sponsored", width: 5.4cm, key-divider: true),
-    erow((1, 12), "", "compensation", width: 5.4cm, key-divider: true),
-    erow((1, 13), "", "job_domain", width: 5.4cm, key-divider: true),
-    erow((1, 14), "FK", "company_id", width: 5.4cm, fill: erd-fk-fill, name: <posting-fk>, key-divider: true),
-    erow((1, 15), "FK", "ben_pack_id", width: 5.4cm, key-divider: true, bottom: true),
+    erow-header((1, 0), "survey_responders", width: 5.4cm),
+    erow((1, 1), "PK", underline[responder_id], width: 5.4cm, fill: erd-pk-fill, key-divider: true, bottom: true),
+    erow((1, 2), "", "name", width: 5.4cm, key-divider: true),
+    erow((1, 3), "", "birth_date", width: 5.4cm, key-divider: true),
+    erow((1, 4), "", "email", width: 5.4cm, key-divider: true),
+    erow((1, 5), "", "owns_copy", width: 5.4cm, key-divider: true),
+    erow((1, 6), "", "times_watched", width: 5.4cm, key-divider: true),
+    erow((1, 7), "FK", "movie_id", width: 5.4cm, fill: erd-fk-fill, name: <posting-fk>, key-divider: true, bottom: true),
 
-    edge(<company-pk>, (0.5, 1), (0.5, 14), <posting-fk>, "1-n", stroke: 0.6pt + black, layer: 1),
+    edge(<company-pk>, (0.5, 1), (0.5, 7), <posting-fk>, "1-n", stroke: 0.6pt + black, layer: 1),
   )
 ],
 [
@@ -569,20 +559,20 @@
 #grid(columns: (auto, 1fr), column-gutter: 1.2em, align: (left + top, left + top),
   [
     #erd-pair(
-      "Store", "StoreID", ("StoreLocation", "SquareFootage", "YearBuilt"),
-      "Manager", "ManagerID", ("FirstName", "LastName", "DateHired"),
+      "Knight", "KnightID", ("Name", "Title", "Motto"),
+      "Quest", "QuestID", ("Goal", "StartDate", "Status"),
       left-mark: "1", right-mark: "1",
     )
     #v(0.6em)
     #erd-pair(
-      "Customer", "CustomerID", ("FirstName", "LastName", "MembershipLevel"),
-      "Order", "OrderID", ("OrderDate", "TotalAmount", "CardNumber"),
+      "Movie", "MovieID", ("Title", "ReleaseDate", "Duration"),
+      "Scene", "SceneID", ("Location", "Runtime", "SceneOrder"),
       left-mark: "1", right-mark: "n",
     )
     #v(0.6em)
     #erd-pair(
-      "Student", "StudentID", ("FirstName", "LastName", "DeclaredMajor"),
-      "Course", "CourseID", ("CourseTitle", "Credits", "Location"),
+      "Actor", "ActorID", ("Name", "BirthDate", "Nationality"),
+      "Movie", "MovieID", ("Title", "ReleaseDate", "Duration"),
       left-mark: "n", right-mark: "n",
     )
   ],
@@ -592,22 +582,22 @@
     #v(0.7em)
     *One to One (1:1)* \
     #pad(left: 1em)[
-      #hl(color: rgb("#c2d6f4"))[A store has one manager] #sym.space
-      #hl(color: rgb("#f4d9a0"))[A manager works at one store]
+      #hl(color: rgb("#c2d6f4"))[A knight has one quest] #sym.space
+      #hl(color: rgb("#f4d9a0"))[A quest belongs to one knight]
     ]
 
     #v(0.7em)
     *One to Many (1:N)* \
     #pad(left: 1em)[
-      #hl(color: rgb("#c2d6f4"))[A customer can have multiple orders] #sym.space
-      #hl(color: rgb("#f4d9a0"))[An order belongs to one customer]
+      #hl(color: rgb("#c2d6f4"))[A movie has multiple scenes] #sym.space
+      #hl(color: rgb("#f4d9a0"))[A scene belongs to one movie]
     ]
 
     #v(0.7em)
     *Many to Many (M:N)* \
     #pad(left: 1em)[
-      #hl(color: rgb("#c2d6f4"))[A student can enroll in many courses] #sym.space
-      #hl(color: rgb("#f4d9a0"))[A course can have lots of students]
+      #hl(color: rgb("#c2d6f4"))[An actor can be in many movies] #sym.space
+      #hl(color: rgb("#f4d9a0"))[A movie can have lots of actors]
     ]
 
     #v(0.5em)
@@ -667,9 +657,9 @@
 
 #v(0.3em)
 #align(center)[#box(width: 85%)[#text(size: 0.85em)[
-To know how much money Tom Hanks got #box(fill: erd-highlight-fill, inset: 2pt, outset: 2pt, radius: 2pt)[paid] to play Woody in _Toy Story_,
-you need to know both the #hl(color: rgb("#c2d6f4"))[movie] and the #hl(color: rgb("#f4c2c2"))[actor]. His pay is probably different than when he was Woody in
-_Toy Story 2_, or when he was Forrest Gump in _Forrest Gump_
+To know how much money Graham Chapman got #box(fill: erd-highlight-fill, inset: 2pt, outset: 2pt, radius: 2pt)[paid] to play King Arthur in _Monty Python and the Holy Grail_,
+you need to know both the #hl(color: rgb("#c2d6f4"))[movie] and the #hl(color: rgb("#f4c2c2"))[actor]. His pay was probably different when he played Brian in
+_Life of Brian_
 ]]]
 ]
 
@@ -716,7 +706,7 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
 
 #v(0.5em)
 #align(center)[#text(style: "italic", size: 1em)[
-  Think: a student could have #hl(color: rgb("#f4c2c2"))[0 cars], but they could also have #hl(color: rgb("#b7e4b7"))[multiple].
+  Think: a knight could have #hl(color: rgb("#f4c2c2"))[0 horses] (coconuts!) or #hl(color: rgb("#b7e4b7"))[multiple].
 ]]
 ]
 
@@ -1003,7 +993,7 @@ LIMIT 5
       )
     ])
   ],
-  fc-card[Example: how to solve 1+1][
+  fc-card[Example: crossing the Bridge of Death][
     #align(center, scale(x: 64%, y: 64%, reflow: true)[
       #set text(size: 1.5em)
       #diagram(
@@ -1012,17 +1002,17 @@ LIMIT 5
         spacing: (2.2cm, 0.8cm),
         node((1,0), [start], shape: fletcher.shapes.ellipse, width: 2.6cm, height: 1.6cm, fill: fc-term),
         edge((1,0), (1,1), "-|>"),
-        node((1,1), [do you have a \ calculator?], shape: fletcher.shapes.diamond, width: 3.9cm, height: 2.6cm, fill: fc-dec),
+        node((1,1), [know the airspeed \ of an unladen \ swallow?], shape: fletcher.shapes.diamond, width: 4.2cm, height: 2.9cm, fill: fc-dec),
         // both branches leave the diamond sideways, then turn down into
         // the top of their first shape
         edge((1,1), (0,1), (0,2), "-|>", [no], label-pos: 0.25, label-side: center, label-fill: card-fill),
         edge((1,1), (2,1), (2,2), "-|>", [yes], label-pos: 0.25, label-side: center, label-fill: card-fill),
-        node((0,2), [do 1+1 in \ your head], shape: rect, width: 3.6cm, height: 1.9cm, fill: fc-proc),
-        node((2,2), [enter "1+1=" \ into calculator], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 1.9cm, fill: fc-io),
+        node((0,2), [thrown into the \ Gorge of \ Eternal Peril], shape: rect, width: 4.6cm, height: 2.4cm, fill: fc-proc),
+        node((2,2), [ask: "African or \ European swallow?"], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 1.9cm, fill: fc-io),
         edge((2,2), (2,3), "-|>"),
-        node((2,3), [calculator processes \ the math], shape: rect, width: 5.6cm, height: 1.9cm, fill: fc-proc),
+        node((2,3), [Bridgekeeper tries \ to answer], shape: rect, width: 5.6cm, height: 1.9cm, fill: fc-proc),
         edge((2,3), (2,4), "-|>"),
-        node((2,4), [calculator displays \ the result], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 1.9cm, fill: fc-io),
+        node((2,4), [Bridgekeeper: \ "I don't know that!"], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 1.9cm, fill: fc-io),
         // both paths come back together at the connector
         edge((0,2), (0,5), (1,5), "-|>"),
         edge((2,4), (2,5), (1,5), "-|>"),
@@ -1063,7 +1053,7 @@ Sub thisIsMySubName()
 
             ' Range and Cells are SIMILAR but different: Range("E7") = Cells(7, 5)
             Range("A1").Activate
-            ActiveCell.Value = "Hello"
+            ActiveCell.Value = "Ni!"
 
             Range("A1:D3").Copy
             Range("E5").PasteSpecial
@@ -1125,18 +1115,18 @@ Sub thisIsMySubName()
 
     i = 5
     j = 1.2345
-    k = "Hello there! General Kenobi!"
+    k = "Tis but a scratch!"
     l = True
     Set m = Sheets("Sheet1") 'objects (sheets, books, ranges) use Set instead of =
 
 'USER INTERFACE!
 
     'Tell the user something
-    MsgBox "Oh hello there user, welcome to my spreadsheet"
+    MsgBox "Halt! Who would cross the Bridge of Death?"
 
     'Ask for an input
     Dim username As String
-    username = InputBox("What's your name?")
+    username = InputBox("What is your name?")
 
 ' COMBINGING STRINGS
 
@@ -1145,7 +1135,7 @@ Sub thisIsMySubName()
     name = "James"
 
     ' COmbine strings with ampersands (&)-- don't forget spaces
-    myOutput = "Hello. My name is " & name & " and this is Disney Channel!"
+    myOutput = "My name is " & name & " and I seek the Grail!"
 ```
 ]
 ]
@@ -1171,20 +1161,20 @@ Sub thisIsMySubName()
     Select Case fruit
         Case "apple", "strawberry"
             Color = "red"
-        Case "grape"
-            Color = "purple"
+        Case "coconut"
+            Color = "brown"
         Case Else
             Color = "unknown"
     End Select
 
     'Another Case Statement
-    Select Case temperature
-        Case Is >= 100
-            feel = "too hot"
-        Case 80 To 100
-            feel = "pretty warm"
-        Case Is < 80
-            feel = "I'm probably staying out of the pool"
+    Select Case imdb_score
+        Case Is >= 8
+            verdict = "must watch (like Monty Python)"
+        Case 6 To 8
+            verdict = "pretty good"
+        Case Is < 6
+            verdict = "I'm probably skipping this one"
     End Select
 ```
 ]
@@ -1255,9 +1245,9 @@ Function thisIsMyFunctionName(num As Integer, tf As Boolean) As String
 
     ' the OUTPUT comes from your function
     ' set the function's name equal to something
-    ' in this case, our outpus has ot be a string:
+    ' in this case, our output has to be a string:
 
-    thisIsMyFuncitonName = "That's a very nice hat you have there, partner!"
+    thisIsMyFunctionName = "Your mother was a hamster!"
 
     ' generally your inputs will be used to calculate/decide your output
 
@@ -1481,11 +1471,11 @@ Go here for free bootstrap themes:\
 #grid(columns: (1fr, 1fr), column-gutter: 1.2em, align: top,
   dark-code(size: 0.64em, width: 100%, ```html
 <!-- This is a comment -->
-<h1>Main heading</h1>
-<h2>Section heading</h2>
-<h3>Subsection</h3>
+<h1>The Holy Grail</h1>
+<h2>The Knights</h2>
+<h3>Sir Robin</h3>
 
-<p>This is a paragraph.</p>
+<p>Bravely ran away.</p>
 
 <!-- Line Break -->
 <br>
@@ -1493,9 +1483,9 @@ Go here for free bootstrap themes:\
   dark-code(size: 0.64em, width: 100%, ```html
 <!-- Unordered List (Bullets) -->
 <ul>
-    <li>Item 1</li>
-    <li>Item 2</li>
-    <li>Item 3</li>
+    <li>Sir Lancelot</li>
+    <li>Sir Galahad</li>
+    <li>Sir Robin</li>
 </ul>
 
 <!-- Change <ul> to <ol>
@@ -1559,10 +1549,10 @@ for an ordered list (Numbers) -->
 #v(1fr)
 #dark-code(width: 100%, size: 0.7em, ```html
 <!-- Images -->
-<img src="images/bird.jpg" alt="A bird wearing a bagel.">
+<img src="images/swallow.jpg" alt="An unladen swallow.">
 
-<img src="https://example.com/bird-online.jpg"
-    alt="That same bird, but online.">
+<img src="https://example.com/swallow.jpg"
+    alt="African or European?">
 ```)
 #v(1em)
 #align(center)[
@@ -1581,7 +1571,7 @@ for an ordered list (Numbers) -->
 HTML:
 #dark-code(size: 0.62em, ```html
 <div class="square-image">
-    <img src="assets/doctor-who-tardis.jpg" alt="TARDIS">
+    <img src="assets/coconuts.jpg" alt="Two coconut halves">
 </div>
 ```)
 
@@ -1864,7 +1854,7 @@ body {
       #v(0.1em)
       #text(size: 0.85em)[Apply it in your HTML (no period):]
       #dark-code(size: 0.6em, width: 100%, ```html
-<p class="highlight">Hi!</p>
+<p class="highlight">Ni!</p>
 ```)
     ]),
 )
