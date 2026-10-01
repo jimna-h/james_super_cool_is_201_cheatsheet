@@ -128,16 +128,59 @@
   }
 }
 
-#show raw.where(lang: "vb"): it => {
+// one vb line with some phrases given a soft background: `hls` is an array
+// of (regex pattern, fill). Each piece keeps its normal code/comment coloring.
+#let vba-line-hl(line, hls) = {
+  let chars = line.clusters()
+  // where the comment starts (same rule as vba-line)
+  let in-str = false
+  let cmt = chars.len()
+  for i in range(chars.len()) {
+    let c = chars.at(i)
+    if c == "\"" { in-str = not in-str }
+    else if c == "'" and not in-str { cmt = i; break }
+  }
+  // highlighted ranges, in order
+  let ranges = ()
+  for (pat, fill) in hls {
+    for m in line.matches(regex(pat)) { ranges.push((m.start, m.end, fill)) }
+  }
+  ranges = ranges.sorted(key: r => r.at(0))
+  let piece(a, b) = {
+    // a stretch of the line, colored as code or comment
+    if b <= a { return [] }
+    if a >= cmt { text(fill: vba-cm-color, vba-join(chars.slice(a, b))) }
+    else if b <= cmt { vba-tokenize-code(vba-join(chars.slice(a, b))) }
+    else [#vba-tokenize-code(vba-join(chars.slice(a, cmt)))#text(fill: vba-cm-color, vba-join(chars.slice(cmt, b)))]
+  }
+  let pos = 0
+  for (a, b, fill) in ranges {
+    piece(pos, a)
+    box(fill: fill, outset: (y: 0.15em), radius: 2pt, piece(a, b))
+    pos = b
+  }
+  piece(pos, chars.len())
+}
+
+// renders a vb code block. `hl` optionally picks lines by their CONTENT (so
+// it survives reordering): an array of (line regex, that line's highlights),
+// e.g. (("^Function", (("knight As String", fill),)),). The first matching
+// entry applies to a line.
+#let vba-render(it, hl: ()) = {
   set text(font: "Courier New")
   // tighter than the default 0.65em, matching the original's line spacing
   set par(leading: 0.5em)
   let lines = it.text.split("\n")
   for (i, line) in lines.enumerate() {
-    vba-line(line)
+    let h = none
+    for (sel, hls) in hl {
+      if line.match(regex(sel)) != none { h = hls; break }
+    }
+    if h != none { vba-line-hl(line, h) } else { vba-line(line) }
     if i < lines.len() - 1 { linebreak() }
   }
 }
+#show raw.where(lang: "vb"): it => vba-render(it)
 // Lets a VBA slide's code run into the page's side/bottom margins (and, with
 // a negative `top`, up beside the slide title) so it can fill the slide the
 // way the original's code does.
@@ -265,9 +308,18 @@
 ]
 
 // ---------- ERD building blocks (real entity boxes + crow's-foot connectors) ----------
-#let erd-pk-fill = rgb("#f7d6da")
-#let erd-fk-fill = rgb("#cfe0f5")
-#let erd-highlight-fill = rgb("#fff5b3")
+// ERD highlights use just two colors: purple (the ERD topic color) for the
+// main idea on each slide, yellow as the one secondary
+#let erd-purple = topic.erd.lighten(75%)
+#let erd-yellow = rgb("#fff5b3")
+// the same two for `hl(...)`, which lightens its color by 40%
+#let erd-purple-hl = topic.erd.lighten(58%)
+#let erd-yellow-hl = rgb("#ffee80")
+// (the Composite Table slide also uses a green, for its one example field)
+#let erd-green = rgb("#d4efcf")
+#let erd-pk-fill = erd-purple
+#let erd-fk-fill = erd-yellow
+#let erd-highlight-fill = erd-yellow
 #let erd-header-h = 0.85cm
 #let erd-row-h = 0.72cm
 #let erd-key-col-w = 1.75cm
@@ -338,16 +390,16 @@
   let mark-cy = erd-header-h + erd-row-h / 2
   box[
     #place(top + left, dx: width - 0.35cm, dy: mark-cy - 0.2cm)[
-      #box(fill: rgb("#f4d9a0").lighten(35%), width: 0.7cm, height: 0.4cm)
+      #box(fill: erd-yellow, width: 0.7cm, height: 0.4cm)
     ]
     #place(top + left, dx: width + gap - 0.35cm, dy: mark-cy - 0.2cm)[
-      #box(fill: rgb("#c2d6f4").lighten(35%), width: 0.7cm, height: 0.4cm)
+      #box(fill: erd-purple, width: 0.7cm, height: 0.4cm)
     ]
     #diagram(
       node-stroke: none,
       spacing: (gap, 0pt),
-      ..erd-box(0, 0, left-name, left-pk, left-attrs, width: width, header-fill: rgb("#c2d6f4"), pk-fill: white),
-      ..erd-box(1, 0, right-name, right-pk, right-attrs, width: width, header-fill: rgb("#f4d9a0"), pk-fill: white),
+      ..erd-box(0, 0, left-name, left-pk, left-attrs, width: width, header-fill: erd-purple, pk-fill: white),
+      ..erd-box(1, 0, right-name, right-pk, right-attrs, width: width, header-fill: erd-yellow, pk-fill: white),
       edge((0, 1), (1, 1), left-mark + "-" + right-mark, stroke: 0.6pt + black),
     )
   ]
@@ -377,8 +429,8 @@
 #let erd-minmax-line-w = erd-minmax-outer-w * 2 + erd-minmax-inner-w * 2 + erd-minmax-edge-w
 #let erd-minmax-row-h = 2.3cm
 #let erd-minmax-table-w = 0.9cm
-#let erd-minmax-pink = rgb("#f4c2c2")
-#let erd-minmax-green = rgb("#b7e4b7")
+#let erd-minmax-pink = erd-purple-hl  // (name kept) minimum: purple
+#let erd-minmax-green = erd-yellow-hl  // (name kept) maximum: yellow
 
 // mark geometry, tuned against the original slide's proportions
 #let erd-minmax-tick-h = 0.6cm
@@ -515,9 +567,20 @@
 
 == ERD: Primary / Foreign Keys <erd-pfk>
 
-#grid(columns: (auto, 11.5cm), gutter: 1.2em,
+// a few rows of real data, so students see the FK values pointing at PKs
+#let pf-cell(body, fill: none) = table.cell(fill: fill, box(text(font: "Consolas", size: 0.42em, body)))
+#let pf-head(body) = table.cell(fill: luma(230), box(text(font: "Consolas", size: 0.42em, weight: "bold", body)))
+// each example table sits right under its ERD box, with an arrow down from it
+#let pf-table(title, cols, ..cells) = box(stack(dir: ttb, spacing: 0.6em,
+  align(center, text(size: 0.8em, fill: luma(120))[↓]),
+  table(columns: cols, inset: (x: 0.4em, y: 0.25em), stroke: 0.5pt + luma(190), align: left, ..cells),
+))
+
+// (no slide number on acronym pages, so this can use the bottom margin)
+#pad(bottom: -36pt)[
+#grid(columns: (auto, 1fr), column-gutter: 1.2em,
 [
-  #diagram(
+  #scale(110%, reflow: true, origin: top + left)[#diagram(
     node-stroke: none,
     spacing: (1.6cm, 0pt),
     erow-header((0, 0), "movie_info", width: 4.6cm),
@@ -539,10 +602,26 @@
     erow((1, 7), "FK", "movie_id", width: 5.4cm, fill: erd-fk-fill, name: <posting-fk>, key-divider: true, bottom: true),
 
     edge(<company-pk>, (0.5, 1), (0.5, 7), <posting-fk>, "1-n", stroke: 0.6pt + black, layer: 1),
+  )]
+  #v(-0.75em)
+  // the 2nd table starts where the 2nd ERD box does (box + gap, at 110%)
+  #grid(columns: ((4.6cm + 1.6cm) * 1.1, auto), align: left + top,
+    pf-table("movie_info", 2,
+      pf-head[movie_id], pf-head[title],
+      pf-cell(fill: erd-pk-fill)[1], pf-cell[Monty Python…],
+      pf-cell(fill: erd-pk-fill)[2], pf-cell[Princess Bride],
+      pf-cell(fill: erd-pk-fill)[3], pf-cell[Shrek]),
+    pf-table("survey_responders", 3,
+      pf-head[responder_id], pf-head[name], pf-head[movie_id],
+      pf-cell(fill: erd-pk-fill)[1], pf-cell[James], pf-cell(fill: erd-fk-fill)[1],
+      pf-cell(fill: erd-pk-fill)[2], pf-cell[Ava], pf-cell(fill: erd-fk-fill)[2],
+      pf-cell(fill: erd-pk-fill)[3], pf-cell[Lee], pf-cell(fill: erd-fk-fill)[1]),
   )
+  #v(-0.2em)
+  #block(width: 15cm, text(size: 0.5em, fill: luma(80))[Want the duration of James's favorite movie? Look up his #text(font: "Consolas")[movie_id] (1) in #text(font: "Consolas")[movie_info]. The movie's info is stored once there, not copied onto James's and Lee's rows. Avoiding that repetition is the power of foreign keys!])
 ],
 [
-  #text(size: 1.1em)[
+  #text(size: 0.85em)[
     A #box(fill: erd-pk-fill, inset: 2pt, outset: 2pt, radius: 2pt)[primary key] is a unique identifier (think social security number)
 
     #v(0.6em)
@@ -551,62 +630,50 @@
 ]
 )
 
+]
 #corner-acronym("Entity", "Relationship", "Diagram", color: topic.erd)
 
 == ERD: Cardinality
 #slide-text(0.78em)[
+// runs into the bottom margin; the slide number (bottom right) stays clear of it
+#pad(bottom: -36pt)[
 
-#grid(columns: (auto, 1fr), column-gutter: 1.2em, align: (left + top, left + top),
-  [
-    #erd-pair(
-      "Knight", "KnightID", ("Name", "Title", "Motto"),
-      "Quest", "QuestID", ("Goal", "StartDate", "Status"),
-      left-mark: "1", right-mark: "1",
-    )
-    #v(0.6em)
-    #erd-pair(
-      "Movie", "MovieID", ("Title", "ReleaseDate", "Duration"),
-      "Scene", "SceneID", ("Location", "Runtime", "SceneOrder"),
-      left-mark: "1", right-mark: "n",
-    )
-    #v(0.6em)
-    #erd-pair(
-      "Actor", "ActorID", ("Name", "BirthDate", "Nationality"),
-      "Movie", "MovieID", ("Title", "ReleaseDate", "Duration"),
-      left-mark: "n", right-mark: "n",
-    )
-  ],
-  [
-    #underline[Read #hl(color: rgb("#c2d6f4"))[left-to-right] AND #hl(color: rgb("#f4d9a0"))[right-to-left]]
+// one card per relationship: its diagram, with its two readings beside it
+#let card-row(diagram, title, fwd, back, note: none) = block(width: 100%,
+  grid(columns: (auto, 1fr), column-gutter: 1.6em, align: (left + horizon, left + horizon),
+    diagram,
+    stack(dir: ttb, spacing: 0.55em,
+      text(weight: "bold", fill: rgb("#3d6b78"), title),
+      hl(color: erd-purple-hl, fwd),
+      hl(color: erd-yellow-hl, back),
+      ..if note != none { (text(style: "italic", size: 0.75em, note),) },
+    ),
+  ))
 
-    #v(0.7em)
-    *One to One (1:1)* \
-    #pad(left: 1em)[
-      #hl(color: rgb("#c2d6f4"))[A knight has one quest] #sym.space
-      #hl(color: rgb("#f4d9a0"))[A quest belongs to one knight]
-    ]
-
-    #v(0.7em)
-    *One to Many (1:N)* \
-    #pad(left: 1em)[
-      #hl(color: rgb("#c2d6f4"))[A movie has multiple scenes] #sym.space
-      #hl(color: rgb("#f4d9a0"))[A scene belongs to one movie]
-    ]
-
-    #v(0.7em)
-    *Many to Many (M:N)* \
-    #pad(left: 1em)[
-      #hl(color: rgb("#c2d6f4"))[An actor can be in many movies] #sym.space
-      #hl(color: rgb("#f4d9a0"))[A movie can have lots of actors]
-    ]
-
-    #v(0.5em)
-    #text(style: "italic", size: 0.7em)[Note! M:N cardinality requires a composite table (next slide)]
-  ],
-)
+#align(center, underline[Read #hl(color: erd-purple-hl)[left-to-right] AND #hl(color: erd-yellow-hl)[right-to-left]])
+#v(0.1em)
+#card-row(erd-pair(
+    "Knight", "KnightID", ("Name", "Title", "Motto"),
+    "Quest", "QuestID", ("Goal", "StartDate", "Status"),
+    left-mark: "1", right-mark: "1",
+  ), [One to One (1:1)], [A knight has one quest], [A quest belongs to one knight])
+#v(0.55em)
+#card-row(erd-pair(
+    "Movie", "MovieID", ("Title", "ReleaseDate", "Duration"),
+    "Scene", "SceneID", ("Location", "Runtime", "SceneOrder"),
+    left-mark: "1", right-mark: "n",
+  ), [One to Many (1:N)], [A movie has multiple scenes], [A scene belongs to one movie])
+#v(0.55em)
+#card-row(erd-pair(
+    "Actor", "ActorID", ("Name", "BirthDate", "Nationality"),
+    "Movie", "MovieID", ("Title", "ReleaseDate", "Duration"),
+    left-mark: "n", right-mark: "n",
+  ), [Many to Many (M:N)], [An actor can be in many movies], [A movie can have lots of actors],
+  note: [Note! M:N needs a composite table (next slide)])
+]
 ]
 
-== ERD: Composite Table
+== ERD: Associative Table
 #slide-text(0.78em)[
 
 #let mw = 6.4cm
@@ -631,15 +698,15 @@
     erow((0, 10), "", "rating_count", width: mw, scale: es, key-divider: true, bottom: true),
 
     erow-header((1, 0), "character", width: cw, scale: es),
-    erow((1, 1), "PK/FK", underline[movieid], width: cw, fill: erd-fk-fill, name: <char-movieid>, scale: es, key-divider: true),
-    erow((1, 2), "PK/FK", underline[actorid], width: cw, fill: erd-pk-fill, name: <char-actorid>, scale: es, key-divider: true, bottom: true),
+    erow((1, 1), "PK/FK", underline[movieid], width: cw, fill: erd-pk-fill, name: <char-movieid>, scale: es, key-divider: true),
+    erow((1, 2), "PK/FK", underline[actorid], width: cw, fill: erd-yellow, name: <char-actorid>, scale: es, key-divider: true, bottom: true),
     erow((1, 3), "", "character_name", width: cw, scale: es, key-divider: true),
     erow((1, 4), "", "credit_order", width: cw, scale: es, key-divider: true),
-    erow((1, 5), "", "pay", width: cw, fill: erd-highlight-fill, scale: es, key-divider: true),
+    erow((1, 5), "", "pay", width: cw, fill: erd-green, scale: es, key-divider: true),
     erow((1, 6), "", "screentime", width: cw, scale: es, key-divider: true, bottom: true),
 
     erow-header((2, 0), "actor", width: aw, scale: es),
-    erow((2, 1), "PK", underline[actorid], width: aw, fill: erd-pk-fill, name: <actor-pk>, scale: es, key-divider: true, bottom: true),
+    erow((2, 1), "PK", underline[actorid], width: aw, fill: erd-yellow, name: <actor-pk>, scale: es, key-divider: true, bottom: true),
     erow((2, 2), "", "name", width: aw, scale: es, key-divider: true),
     erow((2, 3), "", "date_of_birth", width: aw, scale: es, key-divider: true),
     erow((2, 4), "", "birth_city", width: aw, scale: es, key-divider: true),
@@ -656,10 +723,11 @@
 ]]
 
 #v(0.3em)
-#align(center)[#box(width: 85%)[#text(size: 0.85em)[
-To know how much money Graham Chapman got #box(fill: erd-highlight-fill, inset: 2pt, outset: 2pt, radius: 2pt)[paid] to play King Arthur in _Monty Python and the Holy Grail_,
-you need to know both the #hl(color: rgb("#c2d6f4"))[movie] and the #hl(color: rgb("#f4c2c2"))[actor]. His pay was probably different when he played Brian in
-_Life of Brian_
+#align(center)[#box(width: 95%)[#text(size: 0.85em)[
+To know how much Graham Chapman got #box(fill: erd-green, inset: 2pt, outset: 2pt, radius: 2pt)[paid] to play King Arthur in _Monty Python and the Holy Grail_,
+you need both the #box(fill: erd-purple, inset: 2pt, outset: 2pt, radius: 2pt)[movie] and the #box(fill: erd-yellow, inset: 2pt, outset: 2pt, radius: 2pt)[actor].
+Neither alone is enough: King Arthur has also been played by Sean Connery (_First Knight_) and Clive Owen (_King Arthur_),
+and Chapman's pay was probably different when he played Brian in _Life of Brian_.
 ]]]
 ]
 
@@ -667,8 +735,8 @@ _Life of Brian_
 #slide-text(0.75em)[
 
 #align(center)[#text(size: 1.05em)[
-The #hl(color: rgb("#f4c2c2"))[inner marks are minimum] (0 or 1) \
-and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
+The #hl(color: erd-purple-hl)[inner marks are minimum] (0 or 1) \
+and the #hl(color: erd-yellow-hl)[outer marks are maximum] (1 or many)
 ]]
 
 #v(0.8em)
@@ -679,26 +747,26 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
   erd-minmax-descs((
     [
       #text(size: 1.15em)[
-        A could have #hl(color: rgb("#f4c2c2"))[1 B] or #hl(color: rgb("#b7e4b7"))[1 B] \
-        B could have #hl(color: rgb("#f4c2c2"))[0 A] or #hl(color: rgb("#b7e4b7"))[1 A]
+        A could have #hl(color: erd-purple-hl)[1 B] or #hl(color: erd-yellow-hl)[1 B] \
+        B could have #hl(color: erd-purple-hl)[0 A] or #hl(color: erd-yellow-hl)[1 A]
       ]
     ],
     [
       #text(size: 1.15em)[
-        A could have #hl(color: rgb("#f4c2c2"))[0 B] or #hl(color: rgb("#b7e4b7"))[many B] \
-        B could have #hl(color: rgb("#f4c2c2"))[1 A] or #hl(color: rgb("#b7e4b7"))[many A]
+        A could have #hl(color: erd-purple-hl)[0 B] or #hl(color: erd-yellow-hl)[many B] \
+        B could have #hl(color: erd-purple-hl)[1 A] or #hl(color: erd-yellow-hl)[many A]
       ]
     ],
     [
       #text(size: 1.15em)[
-        A could have #hl(color: rgb("#f4c2c2"))[0 B] or #hl(color: rgb("#b7e4b7"))[1 B] \
-        B could have #hl(color: rgb("#f4c2c2"))[0 A] or #hl(color: rgb("#b7e4b7"))[many A]
+        A could have #hl(color: erd-purple-hl)[0 B] or #hl(color: erd-yellow-hl)[1 B] \
+        B could have #hl(color: erd-purple-hl)[0 A] or #hl(color: erd-yellow-hl)[many A]
       ]
     ],
     [
       #text(size: 1.15em)[
-        A could have #hl(color: rgb("#f4c2c2"))[1 B] or #hl(color: rgb("#b7e4b7"))[many B] \
-        B could have #hl(color: rgb("#f4c2c2"))[1 A] or #hl(color: rgb("#b7e4b7"))[1 A]
+        A could have #hl(color: erd-purple-hl)[1 B] or #hl(color: erd-yellow-hl)[many B] \
+        B could have #hl(color: erd-purple-hl)[1 A] or #hl(color: erd-yellow-hl)[1 A]
       ]
     ],
   )),
@@ -706,7 +774,7 @@ and the #hl(color: rgb("#b7e4b7"))[outer marks are maximum] (1 or many)
 
 #v(0.5em)
 #align(center)[#text(style: "italic", size: 1em)[
-  Think: a knight could have #hl(color: rgb("#f4c2c2"))[0 horses] (coconuts!) or #hl(color: rgb("#b7e4b7"))[multiple].
+  Think: a knight could have #hl(color: erd-purple-hl)[0 horses] (coconuts!) or #hl(color: erd-yellow-hl)[multiple].
 ]]
 ]
 
@@ -881,15 +949,15 @@ JOIN movie_info
 #v(1fr)
 #align(center, grid(columns: 4, column-gutter: 1.2em, align: top + left,
   mini-table("survey_responders", [name], [movie_id],
-    [James], hit(size: 0.75em)[1], [Ava], hit(size: 0.75em)[2], miss[Sam], miss[3], size: 0.75em),
+    [James], hit(size: 0.75em)[1], [Ava], hit(size: 0.75em)[2], miss[Sam], miss[4], size: 0.75em),
   mini-table("movie_info", [movie_id], [title],
-    hit(size: 0.75em)[1], [Monty Python…], hit(size: 0.75em)[2], [Princess Bride], miss[4], miss[Shrek], size: 0.75em),
+    hit(size: 0.75em)[1], [Monty Python…], hit(size: 0.75em)[2], [Princess Bride], miss[3], miss[Shrek], size: 0.75em),
   pad(top: 2em, text(size: 1.6em, fill: luma(120))[→]),
   mini-table("result", [name], [title],
     [James], [Monty Python…], [Ava], [Princess Bride], size: 0.75em),
 ))
 #v(0.6em)
-#align(center, text(size: 0.85em, fill: luma(90))[Sam (movie 3) and Shrek (movie 4) have no match, so they're left out.])
+#align(center, text(size: 0.85em, fill: luma(90))[Sam's movie (4) isn't in movie_info, and no one picked Shrek (3), so both are left out.])
 #v(1fr)
 ]
 
@@ -1046,14 +1114,14 @@ Sub thisIsMySubName()
         'Generally you will first refer to an object type (like a Sheet)
         'and then tell it what you want to do (like delete or add or copy, etc):
 
-            ' Sheets and Worksheets are the same thing
+            ' Sheets and Worksheets work the same for normal sheets
             Sheets("MySheet").Delete
             Sheets.Add.name = "MySheet"
             Worksheets("MySheet").Activate
 
             ' Range and Cells are SIMILAR but different: Range("E7") = Cells(7, 5)
             Range("A1").Activate
-            ActiveCell.Value = "Ni!"
+            ActiveCell.Value = "We want... a shrubbery!"
 
             Range("A1:D3").Copy
             Range("E5").PasteSpecial
@@ -1071,13 +1139,13 @@ Sub thisIsMySubName()
 ```vb
 'NAVIGATION!
 
-    '
-    ActiveCell.End (xlDown)
-    ActiveCell.End (xlToLeft)
+    ' Jump to the edge of the data (like Ctrl + arrow key)
+    ActiveCell.End(xlDown).Select
+    ActiveCell.End(xlToLeft).Select
 
     ' Move (rows, columns) based on a cell or range
     ActiveCell.Offset(1, 2).Value = "NewSpot"
-        Range("A1").Offset(3, 4).Value = "NewSpot" 'The cell that now says "NewSpot" is E4
+    Range("A1").Offset(3, 4).Value = "NewSpot" 'The cell that now says "NewSpot" is E4
 
 ' MISCELLANEOUS!
 
@@ -1095,8 +1163,9 @@ Sub thisIsMySubName()
     Range("A1").Borders(xlEdgeBottom).LineStyle = xlContinuous
 
     ' Text splicing
-    name = "James"
-    first_initial = Left(name, 1)
+    Dim knight As String, first_initial As String
+    knight = "Robin"
+    first_initial = Left(knight, 1) '"R" (the first 1 character)
 ```
 ]
 ]
@@ -1107,7 +1176,7 @@ Sub thisIsMySubName()
 #vba-fill()[
 ```vb
 'DECLARE VARIABLES!
-    Dim i As Integer   'a whole number
+    Dim i As Integer    'a whole number
     Dim j As Double     'a number with a decimal
     Dim k As String     'a line of text
     Dim l As Boolean    'true or false
@@ -1117,7 +1186,7 @@ Sub thisIsMySubName()
     j = 1.2345
     k = "Tis but a scratch!"
     l = True
-    Set m = Sheets("Sheet1") 'objects (sheets, books, ranges) use Set instead of =
+    Set m = Sheets("Sheet1") 'objects (sheets, workbooks, ranges) use Set instead of =
 
 'USER INTERFACE!
 
@@ -1128,14 +1197,14 @@ Sub thisIsMySubName()
     Dim username As String
     username = InputBox("What is your name?")
 
-' COMBINGING STRINGS
+' COMBINING STRINGS
 
     Dim myOutput As String
-    Dim name As String
-    name = "James"
+    Dim myName As String
+    myName = "James"
 
-    ' COmbine strings with ampersands (&)-- don't forget spaces
-    myOutput = "My name is " & name & " and I seek the Grail!"
+    ' Combine strings with ampersands (&) -- don't forget spaces
+    myOutput = "My name is " & myName & " and I seek the Grail!"
 ```
 ]
 ]
@@ -1157,7 +1226,7 @@ Sub thisIsMySubName()
         ' your code here
     End If
 
-    'Case Statements
+    'Case Statements (assume fruit, color, imdb_score, verdict are declared)
     Select Case fruit
         Case "apple", "strawberry"
             Color = "red"
@@ -1171,7 +1240,7 @@ Sub thisIsMySubName()
     Select Case imdb_score
         Case Is >= 8
             verdict = "must watch (like Monty Python)"
-        Case 6 To 8
+        Case 6 To 8 'an 8 already matched above: first match wins
             verdict = "pretty good"
         Case Is < 6
             verdict = "I'm probably skipping this one"
@@ -1187,36 +1256,36 @@ Sub thisIsMySubName()
 ```vb
 'LOOPS!
 
-    'For Loop
+    'For Loop (6 times: 0 to 5)
     For i = 0 To 5
         ' your code here
     Next i
 
     'For Each Loop
-    Dim x As Range
+    Dim x As Range, lastrow As Long
+    lastrow = Cells(Rows.Count, "A").End(xlUp).Row 'last filled row in A
     For Each x In Range("A2", Cells(lastrow, "A"))
         ' your code here
     Next
 
     'For Each Loop 2
-    Dim x As Range
-    Dim mtRange As Range
+    Dim myRange As Range
     Set myRange = Range("A1:E5")
     For Each x In myRange
         ' your code here
     Next
 
     'Do While Loop
-    Do While i = 5 'condition does NOT have to be numbers
+    Do While i < 5 'condition does NOT have to be numbers
         ' your code here
+        i = i + 1 'change something, or it loops forever
     Loop
 
     ' Do Until Loop
     Do Until i = 10 'condition does NOT have to be numbers
-        'your code here
+        ' your code here
+        i = i + 1
     Loop
-
-
 
 End Sub
 ```
@@ -1225,33 +1294,44 @@ End Sub
 
 == VBA: Functions
 #slide-text(0.93em)[
+// tie each variable in the declaration line to its "free" Dim below,
+// one soft color per variable
+#let fn-c1 = rgb("#fff0a8").lighten(55%)  // knight
+#let fn-c2 = rgb("#cfe6ff").lighten(55%)  // isBrave
+#let fn-c3 = rgb("#ffd6e8").lighten(55%)  // knightTitle (the output)
+// (lines are picked by content, so the Dims can go in any order)
+#show raw.where(lang: "vb"): it => vba-render(it, hl: (
+  ("^Function", (("name As String", fn-c1), ("isBrave As Boolean", fn-c2),
+                 ("knightTitle", fn-c3), ("As String$", fn-c3))),
+  ("Dim knightTitle As String", (("Dim knightTitle As String", fn-c3),)),
+  ("Dim name As String", (("Dim name As String", fn-c1),)),
+  ("Dim isBrave As Boolean", (("Dim isBrave As Boolean", fn-c2),)),
+))
 
 #vba-fill()[
 ```vb
-Function thisIsMyFunctionName(num As Integer, tf As Boolean) As String
+Function knightTitle(name As String, isBrave As Boolean) As String
 
-    ' a function declaration is just like a set of dims
-    ' the INPUT is in the parentheses ()
-    ' the OUTPUT is outside of it
-    ' so this function KIND OF has this baked into it:
+    ' a Function RETURNS a value you can use in a cell (a Sub just DOES things)
+    ' the INPUTS go in the parentheses, each with a type
+    ' the OUTPUT's type goes at the end (As String)
+    ' so the function declaration works like Dims you get for free:
+    '     Dim knightTitle As String
+    '     Dim name As String
+    '     Dim isBrave As Boolean
 
-    Dim num As Integer
-    Dim tf As Boolean
-    Dim thisIsMyFunctionName As String
-
-    ' the INPUT then comes from your excel sheet
-    ' for example, in your sheet you cell might say:
-    ' =thisIsMyFunctionName(15, True)
-
-    ' the OUTPUT comes from your function
-    ' set the function's name equal to something
-    ' in this case, our output has to be a string:
-
-    thisIsMyFunctionName = "Your mother was a hamster!"
-
-    ' generally your inputs will be used to calculate/decide your output
+    ' use the inputs to decide the output...
+    If isBrave Then
+        knightTitle = "Sir " & name & " the Brave"
+    Else
+        knightTitle = "Sir " & name & " the Not-Quite-So-Brave"
+    End If
+    ' ...and return it by setting the FUNCTION'S NAME equal to it
 
 End Function
+
+' to use it in a cell:
+' =knightTitle("Robin", FALSE)   gives   Sir Robin the Not-Quite-So-Brave
 ```
 ]
 ]
@@ -1304,7 +1384,7 @@ End Function
     column-gutter: 0.6em,
     row-gutter: 0.8em,
     align: (left + horizon, left + horizon, left + horizon),
-    stat-head[test & use case], stat-head[output], stat-head[how to read it],
+    align(center, stat-head[test & use case]), align(center, stat-head[output]), align(center, stat-head[how to read it]),
 
     stat-test("Correlation", [numeric – numeric \ (Pearson _r_ coefficient)]),
     stat-out[r],
@@ -1359,10 +1439,10 @@ End Function
     H#sub[A]: At least one x is significant
     #v(1fr)
     #text(weight: "bold", fill: topic.stats)[Scientific Notation] \
-    aE#strong[b] = a × 10#super[#strong[b]] \
+    aE#text(weight: "bold", fill: topic.stats)[b] = a × 10#super[#text(weight: "bold", fill: topic.stats)[b]] \
     #v(0.3em)
-    aE#strong[3] = a × 1000 (big) \
-    aE#strong[−3] = a × 0.001 (small)
+    aE#text(weight: "bold", fill: topic.stats)[3] = a × 1000 (big) \
+    aE#text(weight: "bold", fill: topic.stats)[−3] = a × 0.001 (small)
   ]),
 )
 ]
