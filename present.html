@@ -56,32 +56,62 @@
   const canvas = pageEl.querySelector("canvas");
   const linksEl = document.getElementById("links");
   const hud = document.getElementById("hud");
-  let pdf = null, current = 1, renderTask = null;
+  let pdf = null, current = 1, shown = 0, sizeKey = "";
 
   function clamp(n) { return Math.max(1, Math.min(pdf.numPages, n)); }
 
-  async function show(n) {
-    current = clamp(n);
-    history.replaceState(null, "", "#" + current);
-    const page = await pdf.getPage(current);
-
-    // fit the page inside the window, keeping its aspect ratio
+  // Each slide is rendered OFF-screen and only copied to the visible canvas
+  // once it's finished, so there's never a blank (white) frame between
+  // slides. Rendered slides are cached, and the next slide is pre-rendered.
+  const cache = new Map();  // page number -> Promise<{ canvas, vp }>
+  function fit(page) {
     const base = page.getViewport({ scale: 1 });
     const scale = Math.min(innerWidth / base.width, innerHeight / base.height);
-    const vp = page.getViewport({ scale });
+    return { scale, vp: page.getViewport({ scale }) };
+  }
+  function renderOffscreen(n) {
+    if (!cache.has(n)) {
+      cache.set(n, (async () => {
+        const page = await pdf.getPage(n);
+        const { scale, vp } = fit(page);
+        // render sharp on high-DPI screens
+        const dpr = window.devicePixelRatio || 1;
+        const off = document.createElement("canvas");
+        off.width = Math.floor(vp.width * dpr);
+        off.height = Math.floor(vp.height * dpr);
+        await page.render({
+          canvasContext: off.getContext("2d"),
+          viewport: page.getViewport({ scale: scale * dpr }),
+        }).promise;
+        return { canvas: off, vp, page };
+      })());
+    }
+    return cache.get(n);
+  }
+
+  async function show(n, force = false) {
+    const target = clamp(n);
+    // nothing to do (e.g. holding → on the last slide): don't redraw
+    if (target === shown && !force) return;
+    current = target;
+    history.replaceState(null, "", "#" + current);
+
+    const { canvas: off, vp, page } = await renderOffscreen(current);
+    if (current !== target) return;  // a newer key press already moved on
+
+    // swap the finished slide in, all at once
     pageEl.style.width = vp.width + "px";
     pageEl.style.height = vp.height + "px";
+    if (canvas.width !== off.width || canvas.height !== off.height) {
+      canvas.width = off.width;
+      canvas.height = off.height;
+    }
+    canvas.getContext("2d").drawImage(off, 0, 0);
+    shown = current;
 
-    // render sharp on high-DPI screens
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.floor(vp.width * dpr);
-    canvas.height = Math.floor(vp.height * dpr);
-    if (renderTask) renderTask.cancel();
-    renderTask = page.render({
-      canvasContext: canvas.getContext("2d"),
-      viewport: page.getViewport({ scale: scale * dpr }),
-    });
-    try { await renderTask.promise; } catch (e) { return; }  // cancelled
+    // get the neighbors ready so moving on is instant
+    if (current < pdf.numPages) renderOffscreen(current + 1);
+    if (current > 1) renderOffscreen(current - 1);
 
     // clickable link overlays
     linksEl.replaceChildren();
@@ -125,7 +155,15 @@
     e.preventDefault();
   });
   document.getElementById("stage").addEventListener("click", () => pdf && show(current + 1));
-  addEventListener("resize", () => pdf && show(current));
+  // a new window size makes every cached slide the wrong size: re-render
+  addEventListener("resize", () => {
+    if (!pdf) return;
+    const key = innerWidth + "x" + innerHeight + "@" + (window.devicePixelRatio || 1);
+    if (key === sizeKey) return;
+    sizeKey = key;
+    cache.clear();
+    show(current, true);
+  });
 
   // hide the cursor and page counter when the mouse sits still
   let idleTimer;
@@ -141,6 +179,7 @@
     document.getElementById("msg").remove();
     pageEl.style.visibility = "visible";
     hud.textContent = "← → to move  ·  F = fullscreen";
+    sizeKey = innerWidth + "x" + innerHeight + "@" + (window.devicePixelRatio || 1);
     show(parseInt(location.hash.slice(1)) || 1);
   }).catch((err) => {
     document.getElementById("msg").textContent = "Couldn't load the slides: " + err.message;

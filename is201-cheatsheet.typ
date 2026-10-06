@@ -1061,39 +1061,38 @@ LIMIT 5
       )
     ])
   ],
-  fc-card[Example: how to solve 1+1][
+  fc-card[Example: the Bridge of Death][
     #align(center, scale(x: 64%, y: 64%, reflow: true)[
       #set text(size: 1.5em)
       #diagram(
         node-stroke: 0.7pt,
         edge-stroke: 0.7pt,
-        spacing: (2.2cm, 0.8cm),
-        node((1,0), [start], shape: fletcher.shapes.ellipse, width: 2.6cm, height: 1.6cm, fill: fc-term),
+        spacing: (1.4cm, 0.75cm),
+        node((1,0), [start], shape: fletcher.shapes.ellipse, width: 2.6cm, height: 1.5cm, fill: fc-term),
         edge((1,0), (1,1), "-|>"),
-        node((1,1), [do you have a \ calculator?], shape: fletcher.shapes.diamond, width: 3.9cm, height: 2.6cm, fill: fc-dec),
+        node((1,1), [Bridgekeeper asks: \ "What is your quest?"], shape: fletcher.shapes.parallelogram, width: 6.4cm, height: 1.7cm, fill: fc-io),
+        edge((1,1), (1,2), "-|>"),
+        node((1,2), [you answer], shape: fletcher.shapes.parallelogram, width: 4.4cm, height: 1.4cm, fill: fc-io),
+        edge((1,2), (1,3), "-|>"),
+        node((1,3), [Bridgekeeper checks \ your answer], shape: rect, width: 5.4cm, height: 1.7cm, fill: fc-proc),
+        edge((1,3), (1,4), "-|>"),
+        node((1,4), [correct?], shape: fletcher.shapes.diamond, width: 3.4cm, height: 2cm, fill: fc-dec),
         // both branches leave the diamond sideways, then turn down into
-        // the top of their first shape
-        edge((1,1), (0,1), (0,3), "-|>", [no], label-pos: 0.25, label-side: center, label-fill: card-fill),
-        edge((1,1), (2,1), (2,2), "-|>", [yes], label-pos: 0.25, label-side: center, label-fill: card-fill),
-        // the "no" side mirrors the "yes" side: hidden process, then visible output
-        node((0,3), [do 1+1 in \ your head], shape: rect, width: 3.6cm, height: 1.9cm, fill: fc-proc),
-        edge((0,3), (0,4), "-|>"),
-        node((0,4), [say "2" \ out loud], shape: fletcher.shapes.parallelogram, width: 3.8cm, height: 1.9cm, fill: fc-io),
-        node((2,2), [enter "1+1=" \ into calculator], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 1.9cm, fill: fc-io),
-        edge((2,2), (2,3), "-|>"),
-        node((2,3), [calculator processes \ the math], shape: rect, width: 5.6cm, height: 1.9cm, fill: fc-proc),
-        edge((2,3), (2,4), "-|>"),
-        node((2,4), [calculator displays "2"], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 1.9cm, fill: fc-io),
+        // the top of their output
+        edge((1,4), (0,4), (0,5), "-|>", [yes], label-pos: 0.3, label-side: center, label-fill: card-fill),
+        edge((1,4), (2,4), (2,5), "-|>", [no], label-pos: 0.3, label-side: center, label-fill: card-fill),
+        node((0,5), ["Off you go."], shape: fletcher.shapes.parallelogram, width: 4.4cm, height: 1.5cm, fill: fc-io),
+        node((2,5), ["Into the Gorge of \ Eternal Peril!"], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 1.7cm, fill: fc-io),
         // both paths come back together at the connector
-        edge((0,4), (0,5), (1,5), "-|>"),
-        edge((2,4), (2,5), (1,5), "-|>"),
-        node((1,5), [], shape: fletcher.shapes.circle, width: 0.7cm, fill: fc-conn),
-        edge((1,5), (1,6), "-|>"),
-        node((1,6), [end], shape: fletcher.shapes.ellipse, width: 2.6cm, height: 1.6cm, fill: fc-term),
+        edge((0,5), (0,6), (1,6), "-|>"),
+        edge((2,5), (2,6), (1,6), "-|>"),
+        node((1,6), [], shape: fletcher.shapes.circle, width: 0.7cm, fill: fc-conn),
+        edge((1,6), (1,7), "-|>"),
+        node((1,7), [end], shape: fletcher.shapes.ellipse, width: 2.6cm, height: 1.5cm, fill: fc-term),
       )
     ])
-    #v(0.4em)
-    #align(center, text(size: 1.1em, fill: luma(70))[The user only sees the #box(fill: fc-io, inset: (x: 3pt), outset: (y: 2pt), radius: 2pt)[input/output] steps; \ the #box(fill: fc-proc, inset: (x: 3pt), outset: (y: 2pt), radius: 2pt)[process] happens out of sight in the calculator.])
+    #v(0.2em)
+    #align(center, text(size: 1.1em, fill: luma(70))[You only see and hear the #box(fill: fc-io, inset: (x: 3pt), outset: (y: 2pt), radius: 2pt)[input/output] steps; \ the #box(fill: fc-proc, inset: (x: 3pt), outset: (y: 2pt), radius: 2pt)[process] happens in the Bridgekeeper's head.])
   ],
 )
 #v(0.5em)
