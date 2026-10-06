@@ -994,10 +994,10 @@ JOIN movie_info
   // the blank is where INNER / LEFT / RIGHT / FULL OUTER goes
   pad(left: 0.3em, dark-code(size: 0.48em, pitch: 1.2em, width: 7.4cm, ```sql
 SELECT name, title
-FROM survey_responders
-______ JOIN movie_info
-  ON survey_responders.movie_id
-   = movie_info.movie_id
+FROM A
+______ JOIN B
+  ON A.movie_id
+   = B.movie_id
 ```)),
 )
 #v(0.2em)
@@ -1008,7 +1008,7 @@ ______ JOIN movie_info
     [James], [Monty Python…], [Ava], [Princess Bride], [Sam], null-cell),
   join-card("RIGHT JOIN", false, true, [all of B + matches from A],
     [James], [Monty Python…], [Ava], [Princess Bride], null-cell, [Shrek]),
-  join-card("FULL OUTER JOIN", true, true, [everything from both],
+  join-card("OUTER JOIN", true, true, [everything from both],
     [James], [Monty Python…], [Ava], [Princess Bride], [Sam], null-cell, null-cell, [Shrek]),
 )
 ]
