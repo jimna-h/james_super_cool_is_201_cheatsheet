@@ -962,12 +962,15 @@ JOIN movie_info
 ]
 
 == SQL: Join (2/2)
+#hide-slide-number()
 #slide-text(0.8em)[
+// no slide number here, so the content can run into the bottom margin
+#pad(bottom: -36pt)[
 
 #set smartquote(enabled: false)
 // one join type: its Venn diagram, name, meaning, and what it would return
 // for the example on the last slide
-#let join-card(name, a, b, note, ..rows) = block(width: 100%, height: 5.2cm, fill: card-fill,
+#let join-card(name, a, b, note, ..rows) = block(width: 100%, height: 5cm, fill: card-fill,
   stroke: (left: 3pt + sql-pink), inset: (x: 0.8em, y: 0.5em), [
     #text(font: "Consolas", weight: "bold", fill: sql-pink, name) \
     #text(size: 0.8em, fill: luma(90), note)
@@ -978,7 +981,18 @@ JOIN movie_info
     )
   ])
 
-#text(size: 0.8em, style: "italic", fill: luma(90))[A = the #text(font: "Consolas")[FROM] table, B = the joined table; same example as the last slide.]
+// the two source tables (same data as the last slide), labeled A and B
+#let ab(letter) = box(width: 1.5em, height: 1.5em, radius: 50%, fill: sql-pink.lighten(55%),
+  align(center + horizon, text(weight: "bold", size: 0.9em, letter)))
+#grid(columns: (auto, auto, auto, auto, 1fr), column-gutter: 0.6em, align: horizon,
+  ab[A],
+  mini-table("", [name], [movie_id],
+    [James], [1], [Ava], [2], [Sam], [4], size: 0.52em),
+  pad(left: 1em, ab[B]),
+  mini-table("", [movie_id], [title],
+    [1], [Monty Python…], [2], [Princess Bride], [3], [Shrek], size: 0.52em),
+  pad(left: 1em, text(size: 0.8em, style: "italic", fill: luma(90))[A = the #text(font: "Consolas")[FROM] table \ B = the joined table]),
+)
 #v(0.2em)
 #grid(columns: (1fr, 1fr), gutter: 0.6em,
   join-card("INNER JOIN", false, false, [only matches (same as just JOIN)],
@@ -992,6 +1006,7 @@ JOIN movie_info
 )
 #v(0.3em)
 #align(center, text(size: 0.8em, fill: luma(90))[Missing matches show up as #null-cell (that's where #text(font: "Consolas")[IS NULL] comes in handy).])
+]
 ]
 
 == SQL: Example <sql-example>

@@ -154,7 +154,16 @@
     } else return;
     e.preventDefault();
   });
-  document.getElementById("stage").addEventListener("click", () => pdf && show(current + 1));
+  // a click that just brings the window back into focus shouldn't advance:
+  // only clicks while the window was already active count
+  let focusedAt = 0, wasActive = document.hasFocus();
+  addEventListener("focus", () => { focusedAt = performance.now(); });
+  addEventListener("pointerdown", () => {
+    wasActive = document.hasFocus() && performance.now() - focusedAt > 300;
+  }, true);
+  document.getElementById("stage").addEventListener("click", () => {
+    if (pdf && wasActive) show(current + 1);
+  });
   // a new window size makes every cached slide the wrong size: re-render
   addEventListener("resize", () => {
     if (!pdf) return;
