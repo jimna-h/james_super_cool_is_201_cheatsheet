@@ -1036,7 +1036,7 @@ LIMIT 5
 #let fc-conn = rgb("#e6e6e6")     // connector: gray
 #let rule(body) = text(fill: luma(60), body)
 #let key(body) = text(weight: "bold", fill: fc-orange, body)
-#let fc-card(title, body) = block(width: 100%, height: 12.3cm, fill: card-fill,
+#let fc-card(title, body) = block(width: 100%, height: 13.2cm, fill: card-fill,
   stroke: (top: 3pt + fc-orange), inset: (x: 1em, y: 0.9em), [
     #text(size: 1.5em, weight: "bold", fill: fc-orange, title)
     #v(0.4em)
@@ -1052,16 +1052,16 @@ LIMIT 5
         spacing: (0.7cm, 0.5cm),
         node((0,0), [start/end], shape: fletcher.shapes.ellipse, width: 3.4cm, height: 2cm, fill: fc-term),
         node((1,0), align(left, rule[you can only have #key[ONE] start \ #v(0.3em) but you #key[CAN] have multiple ends]), shape: rect, stroke: none, width: 7cm),
-        node((0,1), [process \ (something happens)], shape: rect, width: 5.6cm, height: 2cm, fill: fc-proc),
+        node((0,1), [process \ (happens behind \ the scenes)], shape: rect, width: 5.6cm, height: 2.4cm, fill: fc-proc),
         node((0,2), [decision \ (T/F or Y/N)], shape: fletcher.shapes.diamond, width: 3.4cm, height: 2.4cm, fill: fc-dec),
         node((1,2), align(left, rule[decisions are the #key[ONLY] thing that can have more than one arrow pointing #key[OUT] of them]), shape: rect, stroke: none, width: 7cm),
-        node((0,3), [input/output \ (info entered \ or displayed)], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 2.3cm, fill: fc-io),
+        node((0,3), [input/output \ (what the user \ enters or sees)], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 2.3cm, fill: fc-io),
         node((0,4), [connector], shape: fletcher.shapes.circle, width: 2.7cm, fill: fc-conn),
         node((1,4), align(left, rule[connectors are the #key[ONLY] thing that can have more than one arrow pointing #key[INTO] them]), shape: rect, stroke: none, width: 7cm),
       )
     ])
   ],
-  fc-card[Example: crossing the Bridge of Death][
+  fc-card[Example: how to solve 1+1][
     #align(center, scale(x: 64%, y: 64%, reflow: true)[
       #set text(size: 1.5em)
       #diagram(
@@ -1070,25 +1070,30 @@ LIMIT 5
         spacing: (2.2cm, 0.8cm),
         node((1,0), [start], shape: fletcher.shapes.ellipse, width: 2.6cm, height: 1.6cm, fill: fc-term),
         edge((1,0), (1,1), "-|>"),
-        node((1,1), [know the airspeed \ of an unladen \ swallow?], shape: fletcher.shapes.diamond, width: 4.2cm, height: 2.9cm, fill: fc-dec),
+        node((1,1), [do you have a \ calculator?], shape: fletcher.shapes.diamond, width: 3.9cm, height: 2.6cm, fill: fc-dec),
         // both branches leave the diamond sideways, then turn down into
         // the top of their first shape
-        edge((1,1), (0,1), (0,2), "-|>", [no], label-pos: 0.25, label-side: center, label-fill: card-fill),
+        edge((1,1), (0,1), (0,3), "-|>", [no], label-pos: 0.25, label-side: center, label-fill: card-fill),
         edge((1,1), (2,1), (2,2), "-|>", [yes], label-pos: 0.25, label-side: center, label-fill: card-fill),
-        node((0,2), [thrown into the \ Gorge of \ Eternal Peril], shape: rect, width: 4.6cm, height: 2.4cm, fill: fc-proc),
-        node((2,2), [ask: "African or \ European swallow?"], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 1.9cm, fill: fc-io),
+        // the "no" side mirrors the "yes" side: hidden process, then visible output
+        node((0,3), [do 1+1 in \ your head], shape: rect, width: 3.6cm, height: 1.9cm, fill: fc-proc),
+        edge((0,3), (0,4), "-|>"),
+        node((0,4), [say "2" \ out loud], shape: fletcher.shapes.parallelogram, width: 3.8cm, height: 1.9cm, fill: fc-io),
+        node((2,2), [enter "1+1=" \ into calculator], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 1.9cm, fill: fc-io),
         edge((2,2), (2,3), "-|>"),
-        node((2,3), [Bridgekeeper tries \ to answer], shape: rect, width: 5.6cm, height: 1.9cm, fill: fc-proc),
+        node((2,3), [calculator processes \ the math], shape: rect, width: 5.6cm, height: 1.9cm, fill: fc-proc),
         edge((2,3), (2,4), "-|>"),
-        node((2,4), [Bridgekeeper: \ "I don't know that!"], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 1.9cm, fill: fc-io),
+        node((2,4), [calculator displays "2"], shape: fletcher.shapes.parallelogram, width: 5.2cm, height: 1.9cm, fill: fc-io),
         // both paths come back together at the connector
-        edge((0,2), (0,5), (1,5), "-|>"),
+        edge((0,4), (0,5), (1,5), "-|>"),
         edge((2,4), (2,5), (1,5), "-|>"),
         node((1,5), [], shape: fletcher.shapes.circle, width: 0.7cm, fill: fc-conn),
         edge((1,5), (1,6), "-|>"),
         node((1,6), [end], shape: fletcher.shapes.ellipse, width: 2.6cm, height: 1.6cm, fill: fc-term),
       )
     ])
+    #v(0.4em)
+    #align(center, text(size: 1.1em, fill: luma(70))[The user only sees the #box(fill: fc-io, inset: (x: 3pt), outset: (y: 2pt), radius: 2pt)[input/output] steps; \ the #box(fill: fc-proc, inset: (x: 3pt), outset: (y: 2pt), radius: 2pt)[process] happens out of sight in the calculator.])
   ],
 )
 #v(0.5em)
