@@ -1002,13 +1002,13 @@ ______ JOIN B
 #v(0.2em)
 #grid(columns: (1fr, 1fr), gutter: 0.6em,
   join-card("INNER JOIN", false, false, [only matches (same as just JOIN)],
-    [James], [Monty Python…], [Gaskin], [Count of Mon…]),
+    [James], [Monty Python and the Holy G…], [Gaskin], [Count of Monte Cristo]),
   join-card("LEFT JOIN", true, false, [all of A + matches from B],
-    [James], [Monty Python…], [Gaskin], [Count of Mon…], [Reese], null-cell),
+    [James], [Monty Python and the Holy G…], [Gaskin], [Count of Monte Cristo], [Reese], null-cell),
   join-card("RIGHT JOIN", false, true, [all of B + matches from A],
-    [James], [Monty Python…], [Gaskin], [Count of Mon…], null-cell, [Princess Bri…]),
+    [James], [Monty Python and the Holy G…], [Gaskin], [Count of Monte Cristo], null-cell, [Princess Bride]),
   join-card("OUTER JOIN", true, true, [everything from both],
-    [James], [Monty Python…], [Gaskin], [Count of Mon…], [Reese], null-cell, null-cell, [Princess Bri…]),
+    [James], [Monty Python and the Holy G…], [Gaskin], [Count of Monte Cristo], [Reese], null-cell, null-cell, [Princess Bride]),
 )
 ]
 ]
