@@ -996,8 +996,7 @@ JOIN movie_info
 SELECT name, title
 FROM A
 ______ JOIN B
-  ON A.movie_id
-   = B.movie_id
+    ON A.movie_id = B.movie_id
 ```)),
 )
 #v(0.2em)
@@ -1025,14 +1024,14 @@ ______ JOIN B
 #text(style: "italic", fill: luma(90))[For well-rated (7+) movies with more than one fan: how many years after each movie came out were its fans born, on average?]
 #v(0.4em)
 #dark-code(width: 100%, size: 0.62em, pitch: 2em, ```sql
-SELECT movie_info.title,
+SELECT title,
        count(*) AS fans,
-       avg(survey_responders.birth_date - movie_info.release_date) AS avg_years_between
+       avg(birth_date - release_date) AS avg_years_between
 FROM survey_responders
 JOIN movie_info ON survey_responders.movie_id = movie_info.movie_id
-WHERE movie_info.imdb_score >= 7
-  AND survey_responders.birth_date IS NOT NULL
-GROUP BY movie_info.title
+WHERE imdb_score >= 7
+  AND birth_date IS NOT NULL
+GROUP BY title
 HAVING count(*) > 1
 ORDER BY avg_years_between DESC
 LIMIT 5
@@ -1975,6 +1974,22 @@ body {
   #box(fill: white, inset: 8pt)[#qrcode("https://jimna-h.github.io/james_super_cool_is_201_cheatsheet/is201-cheatsheet.pdf", width: 6cm, quiet-zone: true)]
   #v(0.5em)
   #text(size: 0.5em, fill: luma(200))[Suggestions? Reach out to me at #link("mailto:jbruce1@byu.edu")[#text(fill: white)[jbruce1\@byu.edu]]]
+]
+
+// the deck's running Monty Python theme, paid off: the movie at the BYU Library
+#let grail-url = "https://lib.byu.edu/search/byu/record/cat.6911315.item.31197238619677"
+// Bedivere kneeling before Arthur, labeled like the title slide's still:
+// a big picture with white labels on it (the source frame has black bars on
+// both sides, cropped off here). The picture links to the library record.
+#let grail-label(size, body, bold: false) = box(fill: white, inset: 3pt,
+  text(size: size, fill: black, weight: if bold { "bold" } else { "regular" }, body))
+#focus-slide(background: white)[
+  #box[
+    #link(grail-url, crop-img("assets/img/bedivere.webp", (2560, 1440), 80, 0, 2398, 1440, width: 23cm))
+    #place(top + left, dx: 31%, dy: 60%, grail-label(0.75em)[You])
+    #place(top + left, dx: 62%, dy: 30%, grail-label(0.55em)[James, telling you \ the BYU Library has it \ (next date night??)])
+    #place(bottom + center, dy: 5%, grail-label(1.2em, bold: true)[Haven't seen _Monty Python\ and the Holy Grail_?])
+  ]
 ]
 
 #focus-slide(background: black)[
