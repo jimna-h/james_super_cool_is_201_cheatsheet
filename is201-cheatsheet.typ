@@ -902,9 +902,9 @@ and the #hl(color: erd-yellow-hl)[outer marks are maximum] (1 or many)
 #let miss(body) = text(fill: luma(150), body)
 #let null-cell = text(fill: sql-pink, style: "italic")[NULL]
 // a tiny example table: bold header row, light borders
-#let mini-table(title, ..cells, size: 0.62em) = [
+#let mini-table(title, ..cells, size: 0.62em, cols: 2) = [
   #if title != "" [#text(size: 0.7em, weight: "bold", font: "Consolas", title) #v(-0.1em)]
-  #table(columns: 2, inset: (x: 0.45em, y: 0.25em), stroke: 0.5pt + luma(190),
+  #table(columns: cols, inset: (x: 0.45em, y: 0.25em), stroke: 0.5pt + luma(190),
     fill: (_, y) => if y == 0 { luma(230) },
     ..cells.pos().map(c => if c.func() == table.cell { c } else { box(text(size: size, font: "Consolas", c)) }))
 ]
@@ -970,7 +970,7 @@ JOIN movie_info
 #set smartquote(enabled: false)
 // one join type: its Venn diagram, name, meaning, and what it would return
 // for the example on the last slide
-#let join-card(name, a, b, note, ..rows) = block(width: 100%, height: 5cm, fill: card-fill,
+#let join-card(name, a, b, note, ..rows) = block(width: 100%, height: 5.1cm, fill: card-fill,
   stroke: (left: 3pt + sql-pink), inset: (x: 0.8em, y: 0.5em), [
     #text(font: "Consolas", weight: "bold", fill: sql-pink, name) \
     #text(size: 0.8em, fill: luma(90), note)
@@ -982,16 +982,23 @@ JOIN movie_info
   ])
 
 // the two source tables (same data as the last slide), labeled A and B
-#let ab(letter) = box(width: 1.5em, height: 1.5em, radius: 50%, fill: sql-pink.lighten(55%),
+#let ab(letter) = box(width: 1.2em, height: 1.2em, radius: 50%, fill: sql-pink.lighten(55%),
   align(center + horizon, text(weight: "bold", size: 0.9em, letter)))
-#grid(columns: (auto, auto, auto, auto, 1fr), column-gutter: 0.6em, align: horizon,
+#grid(columns: (auto, auto, auto, auto, 1fr), column-gutter: 0.4em, align: horizon,
   ab[A],
-  mini-table("", [name], [movie_id],
-    [James], [1], [Ava], [2], [Sam], [4], size: 0.52em),
-  pad(left: 1em, ab[B]),
+  mini-table("", [responder_id], [name], [movie_id],
+    [1], [James], [1], [2], [Ava], [2], [3], [Sam], [4], size: 0.52em, cols: 3),
+  pad(left: 0.4em, ab[B]),
   mini-table("", [movie_id], [title],
     [1], [Monty Python…], [2], [Princess Bride], [3], [Shrek], size: 0.52em),
-  pad(left: 1em, text(size: 0.8em, style: "italic", fill: luma(90))[A = the #text(font: "Consolas")[FROM] table \ B = the joined table]),
+  // the blank is where INNER / LEFT / RIGHT / FULL OUTER goes
+  pad(left: 0.3em, dark-code(size: 0.48em, pitch: 1.2em, width: 7.4cm, ```sql
+SELECT name, title
+FROM survey_responders
+______ JOIN movie_info
+  ON survey_responders.movie_id
+   = movie_info.movie_id
+```)),
 )
 #v(0.2em)
 #grid(columns: (1fr, 1fr), gutter: 0.6em,
@@ -1004,8 +1011,6 @@ JOIN movie_info
   join-card("FULL OUTER JOIN", true, true, [everything from both],
     [James], [Monty Python…], [Ava], [Princess Bride], [Sam], null-cell, null-cell, [Shrek]),
 )
-#v(0.3em)
-#align(center, text(size: 0.8em, fill: luma(90))[Missing matches show up as #null-cell (that's where #text(font: "Consolas")[IS NULL] comes in handy).])
 ]
 ]
 
