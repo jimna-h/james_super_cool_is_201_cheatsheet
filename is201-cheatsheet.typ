@@ -609,16 +609,16 @@
     pf-table("movie_info", 2,
       pf-head[movie_id], pf-head[title],
       pf-cell(fill: erd-pk-fill)[1], pf-cell[Monty Python…],
-      pf-cell(fill: erd-pk-fill)[2], pf-cell[Princess Bride],
-      pf-cell(fill: erd-pk-fill)[3], pf-cell[Shrek]),
+      pf-cell(fill: erd-pk-fill)[2], pf-cell[Count of Mon…],
+      pf-cell(fill: erd-pk-fill)[3], pf-cell[Princess Bri…]),
     pf-table("survey_responders", 3,
       pf-head[responder_id], pf-head[name], pf-head[movie_id],
       pf-cell(fill: erd-pk-fill)[1], pf-cell[James], pf-cell(fill: erd-fk-fill)[1],
-      pf-cell(fill: erd-pk-fill)[2], pf-cell[Ava], pf-cell(fill: erd-fk-fill)[2],
-      pf-cell(fill: erd-pk-fill)[3], pf-cell[Lee], pf-cell(fill: erd-fk-fill)[1]),
+      pf-cell(fill: erd-pk-fill)[2], pf-cell[Gaskin], pf-cell(fill: erd-fk-fill)[2],
+      pf-cell(fill: erd-pk-fill)[3], pf-cell[Megan], pf-cell(fill: erd-fk-fill)[1]),
   )
   #v(-0.2em)
-  #block(width: 15cm, text(size: 0.5em, fill: luma(80))[Want the duration of James's favorite movie? Look up his #text(font: "Consolas")[movie_id] (1) in #text(font: "Consolas")[movie_info]. The movie's info is stored once there, not copied onto James's and Lee's rows. Avoiding that repetition is the power of foreign keys!])
+  #block(width: 15cm, text(size: 0.5em, fill: luma(80))[Want the duration of James's favorite movie? Look up his #text(font: "Consolas")[movie_id] (1) in #text(font: "Consolas")[movie_info]. The movie's info is stored once there, not copied onto James's and Megan's rows. Avoiding that repetition is the power of foreign keys!])
 ],
 [
   #text(size: 0.85em)[
@@ -865,7 +865,7 @@ and the #hl(color: erd-yellow-hl)[outer marks are maximum] (1 or many)
   ex([name #op[!=] "James" \ name #op[<>] "James"], [anything but "James"]),
   ex([title #op[LIKE] "%Grail%"], [contains "Grail"]),
   text(size: 0.8em, fill: luma(90))[#text(font: "Consolas", size: 1.06em)[%] = any number of characters \ #text(font: "Consolas", size: 1.06em)[\_] = exactly one character],
-  grid.cell(colspan: 2, ex([name #op[IN] ("James", "Ava", "Sam")], [exact match for #underline[any] of these])),
+  grid.cell(colspan: 2, ex([name #op[IN] ("James", "Gaskin", "Reese")], [exact match for #underline[any] of these])),
 )
 #v(1.2em)
 #type-row("Blank", [any data type], (1fr, 1fr), pad-y: 1.1em,
@@ -949,15 +949,15 @@ JOIN movie_info
 #v(1fr)
 #align(center, grid(columns: 4, column-gutter: 1.2em, align: top + left,
   mini-table("survey_responders", [name], [movie_id],
-    [James], hit(size: 0.75em)[1], [Ava], hit(size: 0.75em)[2], miss[Sam], miss[4], size: 0.75em),
+    [James], hit(size: 0.75em)[1], [Gaskin], hit(size: 0.75em)[2], miss[Reese], miss[4], size: 0.75em),
   mini-table("movie_info", [movie_id], [title],
-    hit(size: 0.75em)[1], [Monty Python…], hit(size: 0.75em)[2], [Princess Bride], miss[3], miss[Shrek], size: 0.75em),
+    hit(size: 0.75em)[1], [Monty Python…], hit(size: 0.75em)[2], [Count of Mon…], miss[3], miss[Princess Bri…], size: 0.75em),
   pad(top: 2em, text(size: 1.6em, fill: luma(120))[→]),
   mini-table("result", [name], [title],
-    [James], [Monty Python…], [Ava], [Princess Bride], size: 0.75em),
+    [James], [Monty Python…], [Gaskin], [Count of Mon…], size: 0.75em),
 ))
 #v(0.6em)
-#align(center, text(size: 0.85em, fill: luma(90))[Sam's movie (4) isn't in movie_info, and no one picked Shrek (3), so both are left out.])
+#align(center, text(size: 0.85em, fill: luma(90))[Reese's movie (4) isn't in movie_info, and no one picked Princess Bride (3), so both are left out.])
 #v(1fr)
 ]
 
@@ -987,10 +987,10 @@ JOIN movie_info
 #grid(columns: (auto, auto, auto, auto, 1fr), column-gutter: 0.4em, align: horizon,
   ab[A],
   mini-table("", [responder_id], [name], [movie_id],
-    [1], [James], [1], [2], [Ava], [2], [3], [Sam], [4], size: 0.52em, cols: 3),
+    [1], [James], [1], [2], [Gaskin], [2], [3], [Reese], [4], size: 0.52em, cols: 3),
   pad(left: 0.4em, ab[B]),
   mini-table("", [movie_id], [title],
-    [1], [Monty Python…], [2], [Princess Bride], [3], [Shrek], size: 0.52em),
+    [1], [Monty Python…], [2], [Count of Mon…], [3], [Princess Bri…], size: 0.52em),
   // the blank is where INNER / LEFT / RIGHT / FULL OUTER goes
   pad(left: 0.3em, dark-code(size: 0.48em, pitch: 1.2em, width: 7.4cm, ```sql
 SELECT name, title
@@ -1002,13 +1002,13 @@ ______ JOIN B
 #v(0.2em)
 #grid(columns: (1fr, 1fr), gutter: 0.6em,
   join-card("INNER JOIN", false, false, [only matches (same as just JOIN)],
-    [James], [Monty Python…], [Ava], [Princess Bride]),
+    [James], [Monty Python…], [Gaskin], [Count of Mon…]),
   join-card("LEFT JOIN", true, false, [all of A + matches from B],
-    [James], [Monty Python…], [Ava], [Princess Bride], [Sam], null-cell),
+    [James], [Monty Python…], [Gaskin], [Count of Mon…], [Reese], null-cell),
   join-card("RIGHT JOIN", false, true, [all of B + matches from A],
-    [James], [Monty Python…], [Ava], [Princess Bride], null-cell, [Shrek]),
+    [James], [Monty Python…], [Gaskin], [Count of Mon…], null-cell, [Princess Bri…]),
   join-card("OUTER JOIN", true, true, [everything from both],
-    [James], [Monty Python…], [Ava], [Princess Bride], [Sam], null-cell, null-cell, [Shrek]),
+    [James], [Monty Python…], [Gaskin], [Count of Mon…], [Reese], null-cell, null-cell, [Princess Bri…]),
 )
 ]
 ]
