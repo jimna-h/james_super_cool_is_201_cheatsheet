@@ -549,20 +549,34 @@
 // right when slides are added or reordered
 #let slide-no(lbl) = context utils.slide-counter.at(lbl).first()
 #let sw(c) = box(width: 0.55em, height: 0.55em, radius: 2pt, fill: c, baseline: -0.05em)
+// each unit's cell spans its topics' rows, so a unit reads as one group
+#let unit(n, rows) = table.cell(rowspan: rows, align: center + horizon, inset: (x: 4pt),
+  rotate(-90deg, reflow: true, text(size: 0.7em, weight: "bold", fill: luma(70))[Unit #n]))
 #table(
-  columns: (auto, 1fr),
-  stroke: 0.5pt + gray,
-  inset: 8pt,
-  [Slide], [Topic],
+  columns: (auto, auto, 1fr),
+  // only the outer border and column lines; units are split by the hlines below
+  stroke: (x, y) => (left: 0.5pt + gray, right: 0.5pt + gray, top: if y == 0 { 0.5pt + gray }),
+  inset: (x: 10pt, y: 8pt),
+  align: (center + horizon, center + horizon, left + horizon),
+  table.header([], [*Slide*], [*Topic*]),
+  table.hline(stroke: 0.5pt + gray),
+  unit(2, 2),
   slide-no(<erd-pfk>), [#sw(topic.erd) #h(0.3em) #link(<erd-pfk>)[ERDs]],
   slide-no(<sql>), [#sw(topic.sql) #h(0.3em) #link(<sql>)[SQL]],
+  table.hline(stroke: 0.5pt + gray),
+  unit(3, 2),
   slide-no(<flowcharts>), [#sw(topic.flow) #h(0.3em) #link(<flowcharts>)[Flow Charts]],
   slide-no(<vba>), [#sw(topic.vba) #h(0.3em) #link(<vba>)[VBA]],
+  table.hline(stroke: 0.5pt + gray),
+  unit(4, 3),
   slide-no(<statistics>), [#sw(topic.stats) #h(0.3em) #link(<statistics>)[Statistics]],
   slide-no(<tableau>), [#sw(topic.tableau) #h(0.3em) #link(<tableau>)[Tableau]],
   slide-no(<solver>), [#sw(topic.solver) #h(0.3em) #link(<solver>)[Solver]],
+  table.hline(stroke: 0.5pt + gray),
+  unit(5, 2),
   slide-no(<html>), [#sw(topic.html) #h(0.3em) #link(<html>)[HTML]],
   slide-no(<css>), [#sw(topic.css) #h(0.3em) #link(<css>)[CSS]],
+  table.hline(stroke: 0.5pt + gray),
 )
 
 == ERD: Primary / Foreign Keys <erd-pfk>
@@ -863,7 +877,7 @@ and the #hl(color: erd-yellow-hl)[outer marks are maximum] (1 or many)
 #type-row("Text", [in quotes], (1fr, 1fr), gap: 1.5em, pad-y: 1.1em,
   ex([name #op[=] "James"], [exactly "James"]),
   ex([name #op[!=] "James" \ name #op[<>] "James"], [anything but "James"]),
-  ex([title #op[LIKE] "%Grail%"], [contains "Grail"]),
+  ex([title #op[LIKE] "%Mont%"], [finds both "Monty" and "Monte"]),
   text(size: 0.8em, fill: luma(90))[#text(font: "Consolas", size: 1.06em)[%] = any number of characters \ #text(font: "Consolas", size: 1.06em)[\_] = exactly one character],
   grid.cell(colspan: 2, ex([name #op[IN] ("James", "Gaskin", "Reese")], [exact match for #underline[any] of these])),
 )
@@ -995,7 +1009,7 @@ JOIN movie_info
   pad(left: 0.3em, dark-code(size: 0.48em, pitch: 1.2em, width: 7.4cm, ```sql
 SELECT name, title
 FROM A
-______ JOIN B
+_____ JOIN B
     ON A.movie_id = B.movie_id
 ```)),
 )
