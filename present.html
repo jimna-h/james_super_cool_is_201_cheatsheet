@@ -160,8 +160,10 @@
     // the clicker's "blank screen" button sends B: jump to the title
     // slide, press again to go back
     else if (k === "b" || k === "B") {
-      if (returnTo === null) { returnTo = current; show(1); }
-      else { const back = returnTo; returnTo = null; show(back); }
+      // only "go back" if we're still sitting on the title slide; if you've
+      // moved on since, B jumps to the title again (remembering the new spot)
+      if (current === 1 && returnTo !== null) { const back = returnTo; returnTo = null; show(back); }
+      else { returnTo = current; show(1); }
     }
     else if (k === "Home") show(1);
     else if (k === "End") show(pdf.numPages);
