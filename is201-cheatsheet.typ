@@ -1153,10 +1153,11 @@ Sub thisIsMySubName()
 
             ' Sheets and Worksheets work the same for normal sheets
             Sheets("MySheet").Delete
-            Sheets.Add.name = "MySheet"
+            Sheets.Add.Name = "MySheet"
             Worksheets("MySheet").Activate
 
-            ' Range and Cells are SIMILAR but different: Range("E7") = Cells(7, 5)
+            ' Range and Cells point to the same cells: Range("E7") = Cells(7, 5)
+            ' (Cells takes row, then column NUMBER)
             Range("A1").Activate
             ActiveCell.Value = "We want... a shrubbery!"
 
@@ -1169,6 +1170,45 @@ Sub thisIsMySubName()
 ]
 ]
 
+== VBA: Variables
+#slide-text(0.74em)[
+
+#vba-fill()[
+```vb
+'DECLARE VARIABLES!
+    Dim knights As Integer   'a whole number (use Long for big ones, like row counts)
+    Dim price As Double      'a number with a decimal
+    Dim quote As String      'a line of text
+    Dim isBrave As Boolean   'True or False
+    Dim ws As Worksheet      'an object (a sheet)
+
+    knights = 5
+    price = 12.99
+    quote = "Tis but a scratch!"
+    isBrave = True
+    Set ws = Sheets("Sheet1") 'objects (sheets, workbooks, ranges) use Set instead of just =
+
+'USER INTERFACE!
+
+    ' Tell the user something (a pop-up box)
+    MsgBox "Halt! Who would cross the Bridge of Death?"
+
+    ' Ask the user to type something in
+    Dim username As String
+    username = InputBox("What is your name?")
+
+'COMBINING STRINGS!
+
+    Dim myOutput As String
+    Dim myName As String
+    myName = "James"
+
+    ' Combine strings with ampersands (&) -- don't forget spaces
+    myOutput = "My name is " & myName & " and I seek the Grail!"
+```
+]
+]
+
 == VBA: Navigation and Misc.
 #slide-text(0.8em)[
 
@@ -1177,12 +1217,12 @@ Sub thisIsMySubName()
 'NAVIGATION!
 
     ' Jump to the edge of the data (like Ctrl + arrow key)
-    ActiveCell.End(xlDown).Select
-    ActiveCell.End(xlToLeft).Select
+    ActiveCell.End(xlDown).Activate
+    ActiveCell.End(xlToLeft).Activate
 
-    ' Move (rows, columns) based on a cell or range
-    ActiveCell.Offset(1, 2).Value = "NewSpot"
-    Range("A1").Offset(3, 4).Value = "NewSpot" 'The cell that now says "NewSpot" is E4
+    ' Offset(rows down, columns right) from a cell
+    ActiveCell.Offset(1, 2).Value = "Ni!"   '1 down, 2 right of the active cell
+    Range("A1").Offset(3, 4).Value = "Ni!"  '3 down, 4 right of A1 = E4
 
 ' MISCELLANEOUS!
 
@@ -1199,49 +1239,10 @@ Sub thisIsMySubName()
     ' Bottom border
     Range("A1").Borders(xlEdgeBottom).LineStyle = xlContinuous
 
-    ' Text splicing
-    Dim knight As String, first_initial As String
+    ' Text splicing: take characters from the left or right end
+    Dim knight As String, firstInitial As String
     knight = "Robin"
-    first_initial = Left(knight, 1) '"R" (the first 1 character)
-```
-]
-]
-
-== VBA: Variables
-#slide-text(0.74em)[
-
-#vba-fill()[
-```vb
-'DECLARE VARIABLES!
-    Dim i As Integer    'a whole number
-    Dim j As Double     'a number with a decimal
-    Dim k As String     'a line of text
-    Dim l As Boolean    'true or false
-    Dim m As Worksheet
-
-    i = 5
-    j = 1.2345
-    k = "Tis but a scratch!"
-    l = True
-    Set m = Sheets("Sheet1") 'objects (sheets, workbooks, ranges) use Set instead of =
-
-'USER INTERFACE!
-
-    'Tell the user something
-    MsgBox "Halt! Who would cross the Bridge of Death?"
-
-    'Ask for an input
-    Dim username As String
-    username = InputBox("What is your name?")
-
-' COMBINING STRINGS
-
-    Dim myOutput As String
-    Dim myName As String
-    myName = "James"
-
-    ' Combine strings with ampersands (&) -- don't forget spaces
-    myOutput = "My name is " & myName & " and I seek the Grail!"
+    firstInitial = Left(knight, 1)   '"R" (the first 1 character)
 ```
 ]
 ]
@@ -1253,27 +1254,28 @@ Sub thisIsMySubName()
 ```vb
 'CONDITIONALS!
     ' If Statements
-    If i < 0 Then
+    If knights = 0 Then
         ' your code here
-    ElseIf i < 5 Then
+    ElseIf knights < 5 Then    'only checked if everything above was False
         ' your code here
-    ElseIf i < 10 Then
+    ElseIf knights < 10 Then
         ' your code here
     Else
-        ' your code here
+        ' your code here (everything else)
     End If
 
-    'Case Statements (assume fruit, color, imdb_score, verdict are declared)
+    ' Case Statements: compare ONE value against several options
+    ' (assume fruit, color, imdb_score, verdict are declared)
     Select Case fruit
         Case "apple", "strawberry"
-            Color = "red"
+            color = "red"
         Case "coconut"
-            Color = "brown"
+            color = "brown"
         Case Else
-            Color = "unknown"
+            color = "unknown"
     End Select
 
-    'Another Case Statement
+    ' Another Case Statement (ranges of numbers)
     Select Case imdb_score
         Case Is >= 8
             verdict = "must watch (like Monty Python)"
@@ -1293,32 +1295,34 @@ Sub thisIsMySubName()
 ```vb
 'LOOPS!
 
-    'For Loop (6 times: 0 to 5)
-    For i = 0 To 5
+    ' For Loop
+    Dim i As Integer
+    For i = 0 To 5   'counts 0 to 5 (runs 6 times)
         ' your code here
     Next i
 
-    'For Each Loop
+    ' For Each Loop: once per cell, from A2 down to the last filled row
     Dim x As Range, lastrow As Long
     lastrow = Cells(Rows.Count, "A").End(xlUp).Row 'last filled row in A
     For Each x In Range("A2", Cells(lastrow, "A"))
         ' your code here
     Next
 
-    'For Each Loop 2
+    ' For Each Loop 2: once per cell in a set range
     Dim myRange As Range
     Set myRange = Range("A1:E5")
     For Each x In myRange
         ' your code here
     Next
 
-    'Do While Loop
+    ' Do While Loop: repeats WHILE the condition is true
+    i = 0
     Do While i < 5 'condition does NOT have to be numbers
         ' your code here
         i = i + 1 'change something, or it loops forever
     Loop
 
-    ' Do Until Loop
+    ' Do Until Loop: repeats UNTIL the condition becomes true
     Do Until i = 10 'condition does NOT have to be numbers
         ' your code here
         i = i + 1
