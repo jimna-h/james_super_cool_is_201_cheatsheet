@@ -1135,6 +1135,26 @@ LIMIT 5
 ]
 ]
 
+// the 3-part pattern behind almost every VBA line, as a diagram:
+// what kind of object, which one, then what to do with it
+#let basics-pattern = {
+  set smartquote(enabled: false)
+  let kinds = (
+    ("1. object type", rgb("#d8efd9")),
+    ("2. specify", rgb("#d6e6f7")),
+    ("3. what to do", rgb("#fbe9c4")),
+  )
+  let piece(i, body) = box(fill: kinds.at(i).at(1), inset: (x: 0.3em, y: 0.2em), radius: 2pt,
+    text(font: "Courier New", size: 1.05em, body))
+  pad(left: 2.2em, top: 0.2em, bottom: 0.4em, grid(
+    columns: 3, column-gutter: 0.9em, row-gutter: 0.3em, align: center + horizon,
+    ..kinds.map(((label, c)) => text(font: "Arial", size: 0.75em, weight: "bold",
+      fill: c.darken(55%), label)),
+    piece(0)[Sheets], piece(1)[("Sheet1")], piece(2)[.Activate],
+    piece(0)[Range], piece(1)[("A1:B3")], piece(2)[.Copy],
+  ))
+}
+
 == VBA: Basics <vba>
 #slide-text(0.76em)[
 
@@ -1147,25 +1167,25 @@ Option Explicit 'This makes it so that you can only use variables you've declare
 Sub thisIsMySubName()
 
     'BASICS!
+```
+#basics-pattern
+```vb
+    ' "Sheets" and "Worksheets" work the same:
+    Sheets("MySheet").Delete
+    Sheets.Add.Name = "MySheet"
+    Worksheets("MySheet").Activate
 
-        'Generally you will first refer to an object type (like a Sheet)
-        'and then tell it what you want to do (like delete or add or copy, etc):
+    ' "Range" and "Cells" are equivalent for single cells:
+    ' Range("E7") = Cells(7, 5) --> (Row, Column)
+    Range("A1").Activate
+    ActiveCell.Value = "We want... a shrubbery!" 
+         ' ActiveCell looks at whatever cell was last activated
 
-            ' Sheets and Worksheets work the same for normal sheets
-            Sheets("MySheet").Delete
-            Sheets.Add.Name = "MySheet"
-            Worksheets("MySheet").Activate
+    Range("A1:D3").Copy
+    Range("E5").PasteSpecial
 
-            ' Range and Cells point to the same cells: Range("E7") = Cells(7, 5)
-            ' (Cells takes row, then column NUMBER)
-            Range("A1").Activate
-            ActiveCell.Value = "We want... a shrubbery!"
-
-            Range("A1:D3").Copy
-            Range("E5").PasteSpecial
-
-            ' Columns and Rows are what they sound like
-            Columns("B:D").Delete
+    ' Columns and Rows are what they sound like
+    Columns("B:D").Delete
 ```
 ]
 ]
