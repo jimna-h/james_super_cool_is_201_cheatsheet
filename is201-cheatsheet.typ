@@ -1021,7 +1021,7 @@ _____ JOIN B
     [James], [Monty Python and the Holy G…], [Gaskin], [Count of Monte Cristo], [Reese], null-cell),
   join-card("RIGHT JOIN", false, true, [all of B + matches from A],
     [James], [Monty Python and the Holy G…], [Gaskin], [Count of Monte Cristo], null-cell, [Princess Bride]),
-  join-card("OUTER JOIN", true, true, [everything from both],
+  join-card("FULL OUTER JOIN", true, true, [everything from both],
     [James], [Monty Python and the Holy G…], [Gaskin], [Count of Monte Cristo], [Reese], null-cell, null-cell, [Princess Bride]),
 )
 ]
@@ -1135,6 +1135,97 @@ LIMIT 5
 ]
 ]
 
+// ---------- VBA slide diagrams (one per slide, in the empty space beside
+// the code; same chip colors as the Basics pattern diagram) ----------
+#let vd-green = rgb("#d8efd9")
+#let vd-blue = rgb("#d6e6f7")
+#let vd-amber = rgb("#fbe9c4")
+#let vd-title(body) = text(font: "Arial", size: 14pt, weight: "bold", fill: topic.vba, body)
+#let vd-mono(body, size: 1em) = { set smartquote(enabled: false); text(font: "Courier New", size: size, body) }
+#let vd-chip(c, body, size: 1em) = box(fill: c, inset: (x: 0.3em, y: 0.2em), radius: 2pt, vd-mono(size: size, body))
+// same shape colors as the Flow Charts slide
+#let vd-dec = rgb("#fff2cc")   // decision: yellow
+#let vd-proc = rgb("#dae8fc")  // process: blue
+#let vd-term = rgb("#d5e8d4")  // start/end: green
+// every diagram sits on a light panel, so it's clearly separate from the code
+#let vd-panel(body, width: auto) = block(width: width, fill: luma(247), stroke: (left: 2.5pt + topic.vba.lighten(30%)),
+  inset: (x: 0.7em, y: 0.55em), radius: (right: 3pt), body)
+
+// Loops: every loop is check -> run -> repeat
+#let vd-loop = {
+  set text(size: 12pt)
+  vd-title[Every loop: check, run, repeat]
+  v(0.1em)
+  let q(body) = text(size: 0.9em, body)
+  diagram(
+    node-stroke: 0.6pt, edge-stroke: 0.6pt, spacing: (1.3cm, 0.85cm), label-sep: 3pt,
+    node((0,0), q[keep going?], shape: fletcher.shapes.diamond, fill: vd-dec, width: 2.7cm, height: 1.1cm),
+    edge((0,0), (0,1), "-|>", q[yes], label-side: left),
+    node((0,1), q[run your code], fill: vd-proc, corner-radius: 2pt),
+    edge((0,1), (-1,1), (-1,0), (0,0), "-|>", q[repeat], label-side: left),
+    edge((0,0), (1,0), "-|>", q[no], label-side: left, label-pos: 0.45),
+    node((1,0), q[done], fill: vd-term, corner-radius: 2pt),
+  )
+}
+
+// Navigation: Offset on a mini spreadsheet, from A1 to E4
+#let vd-offset = {
+  set text(size: 13pt)
+  let cw = 1.4cm
+  let rh = 0.75cm
+  let hw = 0.5cm
+  let c = luma(195)
+  vd-title[Range("A1").Offset(3, 4)]
+  v(0.2em)
+  box(width: hw + 5 * cw, height: rh * 6, {
+    for (i, l) in ("A", "B", "C", "D", "E").enumerate() {
+      place(dx: hw + i * cw, dy: 0pt, box(width: cw, height: rh, fill: luma(235), stroke: 0.5pt + c,
+        align(center + horizon, text(font: "Arial", size: 0.75em, fill: luma(90), l))))
+    }
+    for r in range(5) {
+      place(dx: 0pt, dy: rh * (r + 1), box(width: hw, height: rh, fill: luma(235), stroke: 0.5pt + c,
+        align(center + horizon, text(font: "Arial", size: 0.75em, fill: luma(90), str(r + 1)))))
+      for col in range(5) {
+        let f = if r == 0 and col == 0 { vd-green } else if r == 3 and col == 4 { vd-amber } else { white }
+        place(dx: hw + col * cw, dy: rh * (r + 1), box(width: cw, height: rh, fill: f, stroke: 0.5pt + c,
+          if r == 3 and col == 4 { align(center + horizon, vd-mono(size: 0.85em)["Ni!"]) }))
+      }
+    }
+    // the path: 3 rows down, then 4 columns right
+    let x0 = hw + cw / 2
+    let y0 = rh * 1.5
+    let s = 1.3pt + topic.vba
+    place(curve(stroke: s, curve.move((x0, y0)), curve.line((x0, y0 + 3 * rh)), curve.line((hw + 4 * cw - 0.1cm, y0 + 3 * rh))))
+    place(dx: hw + 4 * cw - 0.1cm, dy: y0 + 3 * rh - 3pt, polygon(fill: topic.vba, stroke: none, (0pt, 0pt), (5pt, 3pt), (0pt, 6pt)))
+    place(dx: x0 + 0.1cm, dy: y0 + 1.1 * rh, text(font: "Arial", size: 0.7em, weight: "bold", fill: topic.vba)[+3 rows])
+    place(dx: hw + 1.6 * cw, dy: y0 + 3 * rh - 0.42cm, text(font: "Arial", size: 0.7em, weight: "bold", fill: topic.vba)[+4 columns])
+  })
+}
+
+// Conditionals: an If/ElseIf chain as a mini flow chart
+#let vd-ifchain = {
+  set text(size: 12pt)
+  vd-title[Only the #underline[first] true branch runs]
+  v(0.1em)
+  let q(body) = text(size: 0.9em, body)
+  (diagram(
+    node-stroke: 0.6pt, edge-stroke: 0.6pt, spacing: (1.1cm, 1.1cm), label-sep: 3pt,
+    node((0,0), q[knights = 0?], shape: fletcher.shapes.diamond, fill: vd-dec, width: 2.7cm, height: 1.05cm),
+    edge((0,0), (1,0), "-|>", q[yes], label-side: left, label-pos: 0.45),
+    node((1,0), q[1st branch], fill: vd-proc, corner-radius: 2pt),
+    edge((0,0), (0,1), "-|>", q[no], label-side: left),
+    node((0,1), q[knights < 5?], shape: fletcher.shapes.diamond, fill: vd-dec, width: 2.7cm, height: 1.05cm),
+    edge((0,1), (1,1), "-|>", q[yes], label-side: left, label-pos: 0.45),
+    node((1,1), q[2nd branch], fill: vd-proc, corner-radius: 2pt),
+    edge((0,1), (0,2), "-|>", q[no], label-side: left),
+    node((0,2), q[knights < 10?], shape: fletcher.shapes.diamond, fill: vd-dec, width: 3.1cm, height: 1.05cm),
+    edge((0,2), (1,2), "-|>", q[yes], label-side: left, label-pos: 0.45),
+    node((1,2), q[3rd branch], fill: vd-proc, corner-radius: 2pt),
+    edge((0,2), (0,3), "-|>", q[no], label-side: left),
+    node((0,3), q[Else branch], fill: vd-proc, corner-radius: 2pt),
+  ))
+}
+
 // the 3-part pattern behind almost every VBA line, as a diagram:
 // what kind of object, which one, then what to do with it
 #let basics-pattern = {
@@ -1168,7 +1259,7 @@ Sub thisIsMySubName()
 
     'BASICS!
 ```
-#basics-pattern
+#pad(left: 2.2em, vd-panel(pad(left: -2.2em, basics-pattern)))
 ```vb
     ' "Sheets" and "Worksheets" work the same:
     Sheets("MySheet").Delete
@@ -1190,7 +1281,7 @@ Sub thisIsMySubName()
 ]
 ]
 
-== VBA: Variables
+== VBA: Variables and Text
 #slide-text(0.74em)[
 
 #vba-fill()[
@@ -1208,29 +1299,28 @@ Sub thisIsMySubName()
     isBrave = True
     Set ws = Sheets("Sheet1") 'objects (sheets, workbooks, ranges) use Set instead of just =
 
-'USER INTERFACE!
+'WORKING WITH TEXT!
 
-    ' Tell the user something (a pop-up box)
-    MsgBox "Halt! Who would cross the Bridge of Death?"
-
-    ' Ask the user to type something in
-    Dim username As String
-    username = InputBox("What is your name?")
-
-'COMBINING STRINGS!
-
-    Dim myOutput As String
-    Dim myName As String
+    Dim myName As String, myOutput As String
     myName = "James"
 
     ' Combine strings with ampersands (&) -- don't forget spaces
     myOutput = "My name is " & myName & " and I seek the Grail!"
+
+    ' Take characters from the left or right end
+    myOutput = Left(myName, 1)    '"J"
+    myOutput = Right(myName, 3)   '"mes"
+
+    ' Change the case
+    myOutput = UCase(myName)      '"JAMES"
+    myOutput = LCase(myName)      '"james"
 ```
 ]
 ]
 
 == VBA: Navigation and Misc.
-#slide-text(0.8em)[
+#slide-text(0.7em)[
+#place(top + left, dx: 66%, dy: 160pt, vd-panel(vd-offset))
 
 #vba-fill()[
 ```vb
@@ -1259,16 +1349,21 @@ Sub thisIsMySubName()
     ' Bottom border
     Range("A1").Borders(xlEdgeBottom).LineStyle = xlContinuous
 
-    ' Text splicing: take characters from the left or right end
-    Dim knight As String, firstInitial As String
-    knight = "Robin"
-    firstInitial = Left(knight, 1)   '"R" (the first 1 character)
+'USER INTERFACE!
+
+    ' Tell the user something (a pop-up box)
+    MsgBox "Halt! Who would cross the Bridge of Death?"
+
+    ' Ask the user to type something in
+    Dim username As String
+    username = InputBox("What is your name?")
 ```
 ]
 ]
 
 == VBA: Conditionals
 #slide-text(0.79em)[
+#place(top + left, dx: 66%, dy: 70pt, vd-panel(vd-ifchain))
 
 #vba-fill(top: -40pt)[
 ```vb
@@ -1284,7 +1379,7 @@ Sub thisIsMySubName()
         ' your code here (everything else)
     End If
 
-    ' Case Statements: compare ONE value against several options
+    ' Case Statements: compare ONE value to several options
     ' (assume fruit, color, imdb_score, verdict are declared)
     Select Case fruit
         Case "apple", "strawberry"
@@ -1310,6 +1405,7 @@ Sub thisIsMySubName()
 
 == VBA: Loops
 #slide-text(0.72em)[
+#place(top + left, dx: 66%, dy: 150pt, vd-panel(vd-loop))
 
 #vba-fill(top: -40pt)[
 ```vb
