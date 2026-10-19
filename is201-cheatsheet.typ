@@ -636,7 +636,7 @@
 ],
 [
   #text(size: 0.85em)[
-    A #box(fill: erd-pk-fill, inset: 2pt, outset: 2pt, radius: 2pt)[primary key] is a unique identifier (think social security number)
+    A #box(fill: erd-pk-fill, inset: 2pt, outset: 2pt, radius: 2pt)[primary key] is a unique identifier (think KnightID or MovieID)
 
     #v(0.6em)
     A #box(fill: erd-fk-fill, inset: 2pt, outset: 2pt, radius: 2pt)[foreign key] is another table's primary key, used to link two tables together
@@ -874,12 +874,12 @@ and the #hl(color: erd-yellow-hl)[outer marks are maximum] (1 or many)
 
 #set smartquote(enabled: false)  // straight quotes, like real SQL
 
-#type-row("Text", [in quotes], (1fr, 1fr), gap: 1.5em, pad-y: 1.1em,
-  ex([name #op[=] "James"], [exactly "James"]),
-  ex([name #op[!=] "James" \ name #op[<>] "James"], [anything but "James"]),
-  ex([title #op[LIKE] "%Mont%"], [finds both "Monty" and "Monte"]),
+#type-row("Text", [in single quotes], (1fr, 1fr), gap: 1.5em, pad-y: 1.1em,
+  ex([name #op[=] 'James'], [exactly 'James']),
+  ex([name #op[!=] 'James' \ name #op[<>] 'James'], [anything but 'James']),
+  ex([title #op[LIKE] '%Mont%'], [finds both 'Monty' and 'Monte']),
   text(size: 0.8em, fill: luma(90))[#text(font: "Consolas", size: 1.06em)[%] = any number of characters \ #text(font: "Consolas", size: 1.06em)[\_] = exactly one character],
-  grid.cell(colspan: 2, ex([name #op[IN] ("James", "Gaskin", "Reese")], [exact match for #underline[any] of these])),
+  grid.cell(colspan: 2, ex([name #op[IN] ('James', 'Gaskin', 'Reese')], [exact match for #underline[any] of these])),
 )
 #v(1.2em)
 #type-row("Blank", [any data type], (1fr, 1fr), pad-y: 1.1em,
@@ -904,10 +904,10 @@ and the #hl(color: erd-yellow-hl)[outer marks are maximum] (1 or many)
   ex([owns_copy #op[=] FALSE], [everyone else]),
 )
 #v(0.5em)
-#type-row("Dates", [in quotes: "YYYY-MM-DD"], (1fr, 1fr),
-  ex([release_date #op[>] "1980-01-01"], [released after 1980]),
-  ex([birth_date #op[<] "2000-01-01"], [born before 2000]),
-  grid.cell(colspan: 2, ex([release_date #op[BETWEEN] "1970-01-01" #op[AND] "1979-12-31"], [released in the 1970s])),
+#type-row("Dates", [single-quoted 'YYYY-MM-DD'], (1fr, 1fr),
+  ex([release_date #op[<] '1975-01-01'], [released before 1975, the _Holy Grail_ year]),
+  ex([birth_date #op[<] '1940-01-01'], [older fan born before 1940]),
+  grid.cell(colspan: 2, ex([release_date #op[BETWEEN] '1975-01-01' #op[AND] '1975-12-31'], [released in the year _Monty Python and the Holy Grail_ premiered])),
 )
 ]
 
@@ -1040,12 +1040,12 @@ _____ JOIN B
 #dark-code(width: 100%, size: 0.62em, pitch: 2em, ```sql
 SELECT title,
        count(*) AS fans,
-       avg(birth_date - release_date) AS avg_years_between
+       avg((julianday(birth_date) - julianday(release_date)) / 365.25) AS avg_years_between
 FROM survey_responders
 JOIN movie_info ON survey_responders.movie_id = movie_info.movie_id
 WHERE imdb_score >= 7
   AND birth_date IS NOT NULL
-GROUP BY title
+GROUP BY movie_info.movie_id, title
 HAVING count(*) > 1
 ORDER BY avg_years_between DESC
 LIMIT 5
@@ -1371,7 +1371,7 @@ Sub thisIsMySubName()
     ' If Statements
     If knights = 0 Then
         ' your code here
-    ElseIf knights < 5 Then    'only checked if everything above was False
+    ElseIf knights < 5 Then  
         ' your code here
     ElseIf knights < 10 Then
         ' your code here
@@ -1687,7 +1687,7 @@ In an html file inside VS Code, \ type an exclamation point and enter to automat
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Monty Python and the Holy Grail</title>
 </head>
 <body>
 
@@ -1742,7 +1742,7 @@ for an ordered list (Numbers) -->
       #v(0.2em)
       #grid(columns: (auto, auto), column-gutter: 1.4em, row-gutter: 0.5em, align: left + horizon,
         tg[\<tag\>], lbl[← start tag],
-        pad(left: 1.2em, text(font: "Consolas")[stuff]), lbl[← what the tag applies to],
+        pad(left: 1.2em, text(font: "Consolas")[The Holy Grail]), lbl[← what the tag applies to],
         tg[\</tag\>], lbl[← end tag: same name, plus a /],
       )
     ],
@@ -1766,16 +1766,16 @@ for an ordered list (Numbers) -->
   "11": [← #text(font: "Consolas")[\#] + the id jumps to it on the same page],
 ), ```html
 <!-- Hyperlinks -->
-<a href="https://www.google.com">Visit Google</a>
+<a href="camelot.html">Visit Camelot</a>
 
 <!-- Folder References -->
-<a href="otherpage.html">Visit Other Page</a>
-<a href="subfolder/page.html">Visit Subfolder Page</a>
-<a href="../anotherpage.html">Visit Another Page</a>
+<a href="grail-quest.html">Visit the Grail Quest</a>
+<a href="cast/knights.html">Meet the Knights</a>
+<a href="../camelot.html">Return to Camelot</a>
 
 <!-- On-page Anchors -->
-<h1 id="top">This is the main heading</h1>
-<a href="#top">Jump to the top</a>
+<h1 id="top">The Holy Grail</h1>
+<a href="#top">Return to the Grail</a>
 ```)
 #v(1fr)
 ]
@@ -1786,10 +1786,10 @@ for an ordered list (Numbers) -->
 #v(1fr)
 #dark-code(width: 100%, size: 0.7em, ```html
 <!-- Images -->
-<img src="images/swallow.jpg" alt="An unladen swallow.">
+<img src="images/unladen-swallow.jpg" alt="An unladen swallow.">
 
-<img src="https://example.com/swallow.jpg"
-    alt="African or European?">
+<img src="images/african-swallow.jpg"
+    alt="An African swallow carrying a coconut.">
 ```)
 #v(1em)
 #align(center)[
@@ -1807,7 +1807,7 @@ for an ordered list (Numbers) -->
 #v(0.2em)
 HTML:
 #dark-code(size: 0.62em, ```html
-<div class="square-image">
+<div class="coconut-square">
     <img src="assets/coconuts.jpg" alt="Two coconut halves">
 </div>
 ```)
@@ -1816,7 +1816,7 @@ HTML:
 CSS:
 #grid(columns: (auto, 1fr), column-gutter: 2em, align: bottom,
   dark-code(size: 0.62em, ```css
-.square-image {
+.coconut-square {
     width: 200px;
     height: 200px;
 }
@@ -1898,8 +1898,8 @@ CSS:
       Use a dash or underscore instead:
       #v(0.1em)
       #grid(columns: (auto, auto), column-gutter: 1.5em, row-gutter: 0.4em,
-        text(fill: good)[✓ #mono[about-me.html]], text(fill: bad)[✗ #mono[about me.html]],
-        text(fill: good)[✓ #mono[example_project/]], text(fill: bad)[✗ #mono[example project/]],
+        text(fill: good)[✓ #mono[holy-grail.html]], text(fill: bad)[✗ #mono[holy grail.html]],
+        text(fill: good)[✓ #mono[grail_project/]], text(fill: bad)[✗ #mono[grail project/]],
       )
     ]
     #v(0.9em)
@@ -2051,7 +2051,7 @@ p {
     color: red;
 }
 ```),
-      box(width: 65%, text(size: 0.9em)[If you paint a door blue and then re-paint it red, it will be red instead of blue. CSS works the same way, but with everything not just colors.]),
+      box(width: 65%, text(size: 0.9em)[If Sir Lancelot paints Camelot's gate blue, then repaints it red, it ends up red. Later CSS rules work the same way.]),
     )
   ],
 )
@@ -2083,7 +2083,7 @@ body {
   sel-card([Class (custom) selectors], [Make your own: a *period* + any name. Styles only tags with that class.],
     [
       #dark-code(size: 0.6em, width: 100%, ```css
-.highlight {
+.grail-worthy {
     background-color: yellow;
     font-weight: bold;
 }
@@ -2091,14 +2091,14 @@ body {
       #v(0.1em)
       #text(size: 0.85em)[Apply it in your HTML (no period):]
       #dark-code(size: 0.6em, width: 100%, ```html
-<p class="highlight">Ni!</p>
+<p class="grail-worthy">Ni!</p>
 ```)
     ]),
 )
 
 #v(1fr)
 #align(center, block(fill: rgb("#fff5b3"), inset: (x: 1em, y: 0.6em), radius: 4pt,
-  text(size: 0.95em)[There are A LOT of selectors and properties. Google and AI are your friend for finding exactly what you want!]))
+  text(size: 0.95em)[There are A LOT of selectors and properties. Search for the CSS you need to style your Grail quest site!]))
 #v(1fr)
 ]
 
