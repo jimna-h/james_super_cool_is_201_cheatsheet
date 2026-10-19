@@ -1380,7 +1380,6 @@ Sub thisIsMySubName()
     End If
 
     ' Case Statements: compare ONE value to several options
-    ' (assume fruit, color, imdb_score, verdict are declared)
     Select Case fruit
         Case "apple", "strawberry"
             color = "red"
@@ -1394,7 +1393,7 @@ Sub thisIsMySubName()
     Select Case imdb_score
         Case Is >= 8
             verdict = "must watch (like Monty Python)"
-        Case 6 To 8 'an 8 already matched above: first match wins
+        Case 6 To 8 
             verdict = "pretty good"
         Case Is < 6
             verdict = "I'm probably skipping this one"
@@ -1419,7 +1418,7 @@ Sub thisIsMySubName()
 
     ' For Each Loop: once per cell, from A2 down to the last filled row
     Dim x As Range, lastrow As Long
-    lastrow = Cells(Rows.Count, "A").End(xlUp).Row 'last filled row in A
+    lastrow = Cells(Rows.Count, "A").End(xlUp).Row
     For Each x In Range("A2", Cells(lastrow, "A"))
         ' your code here
     Next
@@ -1433,13 +1432,13 @@ Sub thisIsMySubName()
 
     ' Do While Loop: repeats WHILE the condition is true
     i = 0
-    Do While i < 5 'condition does NOT have to be numbers
+    Do While i < 5
         ' your code here
         i = i + 1 'change something, or it loops forever
     Loop
 
     ' Do Until Loop: repeats UNTIL the condition becomes true
-    Do Until i = 10 'condition does NOT have to be numbers
+    Do Until i = 10
         ' your code here
         i = i + 1
     Loop
