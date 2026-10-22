@@ -96,7 +96,7 @@
 #let vba-cm-color = rgb("#008000")
 #let vba-keywords = ("Option", "Explicit", "Sub", "End", "Dim", "As", "Set",
   "True", "False", "If", "Then", "ElseIf", "Else", "Select", "Case", "Is",
-  "To", "For", "Each", "In", "Next", "Do", "While", "Until", "Loop", "Function")
+  "To", "For", "Each", "In", "Next", "Do", "While", "Until", "Loop", "Function", "Exit")
 
 #let vba-join(arr) = if arr.len() == 0 { "" } else { arr.join() }
 
@@ -1468,21 +1468,24 @@ End Sub
 ```vb
 Function knightTitle(name As String, isBrave As Boolean) As String
 
-    ' a Function RETURNS a value you can use in a cell (a Sub just DOES things)
-    ' the INPUTS go in the parentheses, each with a type
-    ' the OUTPUT's type goes at the end (As String)
-    ' so the function declaration works like Dims you get for free:
+    ' a Function RETURNS a value in a cell (a Sub runs to DO things)
+    ' INPUTS go in parentheses; the OUTPUT type follows: "As String"
+    ' the declaration *basically* creates these Dims for you:
     '     Dim knightTitle As String
     '     Dim name As String
     '     Dim isBrave As Boolean
 
-    ' use the inputs to decide the output...
+    ' Exit Function returns early (a String result defaults to "")
+    If name = "" Then
+        knightTitle = "Unknown knight"
+        Exit Function
+    End If
+
     If isBrave Then
         knightTitle = "Sir " & name & " the Brave"
     Else
         knightTitle = "Sir " & name & " the Not-Quite-So-Brave"
     End If
-    ' ...and return it by setting the FUNCTION'S NAME equal to it
 
 End Function
 
