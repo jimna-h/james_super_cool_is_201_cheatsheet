@@ -110,7 +110,21 @@
   }
 }
 
-#let vba-line(line) = {
+#let vba-comment(comment, bold: none) = {
+  if bold == none {
+    text(fill: vba-cm-color)[#comment]
+  } else {
+    let chars = comment.clusters()
+    let m = comment.match(regex(bold))
+    if m == none {
+      text(fill: vba-cm-color)[#comment]
+    } else {
+      [#text(fill: vba-cm-color)[#vba-join(chars.slice(0, m.start))]#text(fill: vba-cm-color, weight: "bold")[#vba-join(chars.slice(m.start, m.end))]#text(fill: vba-cm-color)[#vba-join(chars.slice(m.end))]]
+    }
+  }
+}
+
+#let vba-line(line, bold: none) = {
   let chars = line.clusters()
   let in-str = false
   let idx = none
@@ -124,7 +138,7 @@
   } else {
     let code-part = vba-join(chars.slice(0, idx))
     let comment-part = vba-join(chars.slice(idx))
-    [#vba-tokenize-code(code-part)#text(fill: vba-cm-color)[#comment-part]]
+    [#vba-tokenize-code(code-part)#vba-comment(comment-part, bold: bold)]
   }
 }
 
@@ -166,7 +180,7 @@
 // it survives reordering): an array of (line regex, that line's highlights),
 // e.g. (("^Function", (("knight As String", fill),)),). The first matching
 // entry applies to a line.
-#let vba-render(it, hl: ()) = {
+#let vba-render(it, hl: (), bold: ()) = {
   set text(font: "Courier New")
   // tighter than the default 0.65em, matching the original's line spacing
   set par(leading: 0.5em)
@@ -176,7 +190,11 @@
     for (sel, hls) in hl {
       if line.match(regex(sel)) != none { h = hls; break }
     }
-    if h != none { vba-line-hl(line, h) } else { vba-line(line) }
+    let b = none
+    for pat in bold {
+      if line.match(regex(pat)) != none { b = pat; break }
+    }
+    if h != none { vba-line-hl(line, h) } else { vba-line(line, bold: b) }
     if i < lines.len() - 1 { linebreak() }
   }
 }
@@ -1231,53 +1249,73 @@ LIMIT 5
 #let basics-pattern = {
   set smartquote(enabled: false)
   let kinds = (
-    ("1. object type", rgb("#d8efd9")),
-    ("2. specify", rgb("#d6e6f7")),
-    ("3. what to do", rgb("#fbe9c4")),
+    ("Object type", rgb("#d8efd9")),
+    ("Specify", rgb("#d6e6f7")),
+    ("What to do", rgb("#fbe9c4")),
   )
   let piece(i, body) = box(fill: kinds.at(i).at(1), inset: (x: 0.3em, y: 0.2em), radius: 2pt,
-    text(font: "Courier New", size: 1.05em, body))
-  pad(left: 2.2em, top: 0.2em, bottom: 0.4em, grid(
-    columns: 3, column-gutter: 0.9em, row-gutter: 0.3em, align: center + horizon,
-    ..kinds.map(((label, c)) => text(font: "Arial", size: 0.75em, weight: "bold",
-      fill: c.darken(55%), label)),
+    text(font: "Courier New", size: 0.95em, body))
+  grid(
+    columns: (1fr, 1fr, 1fr), column-gutter: 0.65em, row-gutter: 0.25em, align: center + horizon,
+    ..kinds.map(((label, c)) => box(width: 100%, fill: c.lighten(7%), inset: 0.35em,
+      text(font: "Arial", size: 0.76em, weight: "bold", fill: c.darken(55%), label))),
     piece(0)[Sheets], piece(1)[("Sheet1")], piece(2)[.Activate],
-    piece(0)[Range], piece(1)[("A1:B3")], piece(2)[.Copy],
-  ))
+    piece(0)[Range], piece(1)[("A1:B3")], piece(2)[.Value = ...],
+    piece(0)[Columns], piece(1)[("A:C")], piece(2)[.AutoFit],
+  )
 }
 
 == VBA: Basics <vba>
-#slide-text(0.76em)[
+#slide-text(0.72em)[
 
 #corner-acronym("Visual", "Basic for", "Applications", color: topic.vba)
 
 #vba-fill()[
-```vb
-Option Explicit 'This makes it so that you can only use variables you've declared (VERY RECOMMENDED)
-
-Sub thisIsMySubName()
-
-    'BASICS!
-```
-#pad(left: 2.2em, vd-panel(pad(left: -2.2em, basics-pattern)))
-```vb
-    ' "Sheets" and "Worksheets" work the same:
-    Sheets("MySheet").Delete
-    Sheets.Add.Name = "MySheet"
-    Worksheets("MySheet").Activate
-
-    ' "Range" and "Cells" are equivalent for single cells:
-    ' Range("E7") = Cells(7, 5) --> (Row, Column)
-    Range("A1").Activate
-    ActiveCell.Value = "We want... a shrubbery!" 
-         ' ActiveCell looks at whatever cell was last activated
-
-    Range("A1:D3").Copy
-    Range("E5").PasteSpecial
-
-    ' Columns and Rows are what they sound like
-    Columns("B:D").Delete
-```
+#vd-panel(width: 100%)[
+#vd-title[Most VBA lines follow this pattern:]
+#v(0.12em)
+// #text(size: 0.85em)[Think: object type → specify → action]
+// #v(0.2em)
+#align(center)[#basics-pattern]
+]
+#v(0.3em)
+#block(width: 76%, fill: luma(249), stroke: (left: 2.5pt + topic.vba.lighten(30%)),
+  inset: 0.5em, radius: (right: 3pt))[
+#grid(
+  columns: (0.8fr, 1.35fr), column-gutter: 0.55em, align: top,
+  block(fill: vd-green, inset: 0.65em, radius: 3pt)[
+    #text(font: "Arial", size: 0.95em, fill: topic.vba)[Many VBA structures act like “sandwiches” with a start and an end.]
+  ],
+  block(fill: luma(245), stroke: 0.6pt + luma(180), inset: 0.55em, radius: 3pt)[
+    #let rail(active, x) = if active {
+      place(top + left, dx: x, dy: 0pt,
+        box(width: 0.15em, height: 1.25em, stroke: (left: 0.65pt + luma(120))))
+    }
+    #let code(body) = text(body, font: "Courier New", size: 0.7em, fill: luma(45))
+    #let row(outer, loop, inner, indent, body) = block(width: 100%, height: 1.25em)[
+      #rail(outer, 0.65em)
+      #rail(loop, 2.45em)
+      #rail(inner, 4.25em)
+      #align(left + horizon)[
+        #h(0.65em + indent * 1.8em)
+        #code(body)
+      ]
+    ]
+    #stack(
+      dir: ttb, spacing: 0pt,
+      row(false, false, false, 0, [Sub Example()]),
+      row(true, false, false, 1, [For \[...\]]),
+      row(true, true, false, 2, [If \[...\] Then]),
+      row(true, true, true, 3, [\[. . .\]]),
+      row(true, true, false, 2, [Else]),
+      row(true, true, true, 3, [\[. . .\]]),
+      row(true, true, false, 2, [End If]),
+      row(true, false, false, 1, [Next]),
+      row(false, false, false, 0, [End Sub]),
+    )
+  ],
+)
+]
 ]
 ]
 
@@ -1286,6 +1324,8 @@ Sub thisIsMySubName()
 
 #vba-fill()[
 ```vb
+Option Explicit 'recommended: declare variables before using them
+
 'DECLARE VARIABLES!
     Dim knights As Integer   'a whole number (use Long for big ones, like row counts)
     Dim price As Double      'a number with a decimal
@@ -1318,45 +1358,73 @@ Sub thisIsMySubName()
 ]
 ]
 
-== VBA: Navigation and Misc.
+== VBA: Miscellaneous
+#slide-text(0.67em)[
+#vba-fill()[
+```vb
+'WORKSHEET EDITING!
+
+    ' Add or delete a sheet
+    Sheets.Add.Name = "MySheet"
+    Sheets("MySheet").Delete
+
+    ' Copy and paste a range
+    Range("A1:D3").Copy
+    Range("E5").PasteSpecial
+
+    ' Delete columns
+    Columns("B:D").Delete
+
+'FORMATTING!
+
+    Range("A1").Font.Bold = True
+    Columns.AutoFit 'all columns
+    Columns("A:C").AutoFit 'specific columns
+    Range("A1").Style = "Currency"
+    Range("A1").Borders(xlEdgeBottom).LineStyle = xlContinuous
+
+'USER INTERFACE!
+
+    Dim name as String
+    name = InputBox("Halt! Who would cross the Bridge of Death?")
+    MsgBox ("Oh, hello " & name.)
+
+'EXCEL WORKSHEET FUNCTIONS!
+
+    ' Call an Excel worksheet function from VBA
+    Dim total As Double
+    total = Application.WorksheetFunction.Sum(Range("A1:A5"))
+```
+]
+]
+
+== VBA: Navigation
 #slide-text(0.7em)[
 #place(top + left, dx: 66%, dy: 160pt, vd-panel(vd-offset))
 
 #vba-fill()[
 ```vb
-'NAVIGATION!
+'SHEETS AND CELLS!
+
+    ' Sheets also includes chart sheets
+    Worksheets("MySheet").Activate
+
+    ' Specify a cell by address or row, column
+    ' Range("E7") = Cells(7, 5)
+    Range("E7").Activate
+
+    ' ActiveCell means the cell that is currently selected
+    ActiveCell.Value = "We want... a shrubbery!"
+
+'MOVE AROUND!
 
     ' Jump to the edge of the data (like Ctrl + arrow key)
     ActiveCell.End(xlDown).Activate
     ActiveCell.End(xlToLeft).Activate
 
     ' Offset(rows down, columns right) from a cell
-    ActiveCell.Offset(1, 2).Value = "Ni!"   '1 down, 2 right of the active cell
-    Range("A1").Offset(3, 4).Value = "Ni!"  '3 down, 4 right of A1 = E4
-
-' MISCELLANEOUS!
-
-    ' Bolding
-    Range("A1").Font.Bold = True
-
-    ' Autofitting columns
-    Columns.AutoFit 'all columns
-    Columns("A:C").AutoFit 'specific columns
-
-    ' Currency format
-    Range("A1").Style = "Currency"
-
-    ' Bottom border
-    Range("A1").Borders(xlEdgeBottom).LineStyle = xlContinuous
-
-'USER INTERFACE!
-
-    ' Tell the user something (a pop-up box)
-    MsgBox "Halt! Who would cross the Bridge of Death?"
-
-    ' Ask the user to type something in
-    Dim username As String
-    username = InputBox("What is your name?")
+    ActiveCell.Offset(1, 2).Value = "Ni!"
+    Range("A1").Offset(3, 4).Value = "Ni!"
 ```
 ]
 ]
@@ -1365,9 +1433,12 @@ Sub thisIsMySubName()
 #slide-text(0.79em)[
 #place(top + left, dx: 66%, dy: 70pt, vd-panel(vd-ifchain))
 
-#vba-fill(top: -40pt)[
+#show raw.where(lang: "vb"): it => vba-render(it, bold: (
+  "If Statements", "Case Statements", "Another Case Statement",
+))
+
+#vba-fill(top: 0pt)[
 ```vb
-'CONDITIONALS!
     ' If Statements
     If knights = 0 Then
         ' your code here
@@ -1406,10 +1477,12 @@ Sub thisIsMySubName()
 #slide-text(0.72em)[
 #place(top + left, dx: 66%, dy: 150pt, vd-panel(vd-loop))
 
-#vba-fill(top: -40pt)[
-```vb
-'LOOPS!
+#show raw.where(lang: "vb"): it => vba-render(it, bold: (
+  "For Loop", "For Each Loop 2", "For Each Loop", "Do While Loop", "Do Until Loop",
+))
 
+#vba-fill(top: 0pt)[
+```vb
     ' For Loop
     Dim i As Integer
     For i = 0 To 5   'counts 0 to 5 (runs 6 times)
@@ -1442,8 +1515,6 @@ Sub thisIsMySubName()
         ' your code here
         i = i + 1
     Loop
-
-End Sub
 ```
 ]
 ]
