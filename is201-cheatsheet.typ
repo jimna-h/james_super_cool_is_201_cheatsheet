@@ -1493,14 +1493,14 @@ Option Explicit 'recommended: declare variables before using them
     Dim x As Range, lastrow As Long
     For Each x In Range("A2", Range("A2").End(xlDown))
         ' your code here
-    Next
+    Next x
 
     ' For Each Loop 2: once per cell in a set range
     Dim myRange As Range
     Set myRange = Range("A1:E5")
     For Each x In myRange
         ' your code here
-    Next
+    Next x
 
     ' Do While Loop: repeats WHILE the condition is true
     i = 0
