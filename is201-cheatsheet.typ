@@ -1491,8 +1491,7 @@ Option Explicit 'recommended: declare variables before using them
 
     ' For Each Loop: once per cell, from A2 down to the last filled row
     Dim x As Range, lastrow As Long
-    lastrow = Cells(Rows.Count, "A").End(xlUp).Row
-    For Each x In Range("A2", Cells(lastrow, "A"))
+    For Each x In Range("A2", Range("A2").End(xlDown))
         ' your code here
     Next
 
